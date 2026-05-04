@@ -29,7 +29,7 @@ class TestSettings:
         monkeypatch.delenv("HTTP_CONNECT_TIMEOUT", raising=False)
         monkeypatch.setitem(Settings.model_config, "env_file", ())
         settings = Settings()
-        assert settings.model == "moonshotai/kimi-k2.6"
+        assert settings.model == "nvidia_nim/z-ai/glm-4.7"
         assert isinstance(settings.provider_rate_limit, int)
         assert isinstance(settings.provider_rate_window, int)
         assert isinstance(settings.nim.temperature, float)
