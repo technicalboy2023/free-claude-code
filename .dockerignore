@@ -42,7 +42,7 @@ docker-compose*.yml
 .dockerignore
 
 # Documentation & CI
-README.md
+
 PLAN.md
 AGENTS.md
 CLAUDE.md
