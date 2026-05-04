@@ -112,7 +112,7 @@ def test_provider_smoke_model_override_accepts_owner_model_name(
 
     models = config.provider_smoke_models()
 
-    assert models[0].full_model == "nvidia_nim/z-ai/glm-4.7"
+    assert models[0].full_model == "nvidia_nim/z-ai/glm-5.1"
     assert models[0].source == "FCC_SMOKE_MODEL_NVIDIA_NIM"
 
 
