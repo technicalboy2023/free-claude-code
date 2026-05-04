@@ -24,7 +24,7 @@ WORKDIR /app
 RUN uv python install 3.14
 
 # Copy project configuration files first to leverage Docker cache
-COPY --chown=appuser:appuser pyproject.toml uv.lock README.md ./
+COPY --chown=appuser:appuser pyproject.toml uv.lock README.md .env.example ./
 
 # Install project dependencies (excluding dev dependencies)
 # We use --frozen to ensure deterministic builds from uv.lock
