@@ -142,8 +142,6 @@ def test_provider_registry_e2e() -> None:
         open_router_api_key="openrouter-key",
         deepseek_api_key="deepseek-key",
         nvidia_nim_api_key="nim-key",
-        lm_studio_base_url="http://localhost:1234/v1",
-        llamacpp_base_url="http://localhost:8080/v1",
     )
     for descriptor in PROVIDER_DESCRIPTORS.values():
         config = build_provider_config(descriptor, settings)

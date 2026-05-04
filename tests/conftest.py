@@ -56,34 +56,6 @@ def open_router_provider(provider_config):
 
 
 @pytest.fixture
-def lmstudio_provider(provider_config):
-    from providers.base import ProviderConfig
-    from providers.lmstudio import LMStudioProvider
-
-    lmstudio_config = ProviderConfig(
-        api_key="lm-studio",
-        base_url="http://localhost:1234/v1",
-        rate_limit=provider_config.rate_limit,
-        rate_window=provider_config.rate_window,
-    )
-    return LMStudioProvider(lmstudio_config)
-
-
-@pytest.fixture
-def llamacpp_provider(provider_config):
-    from providers.base import ProviderConfig
-    from providers.llamacpp import LlamaCppProvider
-
-    llamacpp_config = ProviderConfig(
-        api_key="llamacpp",
-        base_url="http://localhost:8080/v1",
-        rate_limit=10,
-        rate_window=60,
-    )
-    return LlamaCppProvider(llamacpp_config)
-
-
-@pytest.fixture
 def mock_cli_session():
     from messaging.platforms.base import CLISession
 

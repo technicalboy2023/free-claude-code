@@ -18,9 +18,6 @@ DEEPSEEK_ANTHROPIC_DEFAULT_BASE = "https://api.deepseek.com/anthropic"
 # Historical export name: DeepSeek upstream is the native Anthropic path above.
 DEEPSEEK_DEFAULT_BASE = DEEPSEEK_ANTHROPIC_DEFAULT_BASE
 OPENROUTER_DEFAULT_BASE = "https://openrouter.ai/api/v1"
-LMSTUDIO_DEFAULT_BASE = "http://localhost:1234/v1"
-LLAMACPP_DEFAULT_BASE = "http://localhost:8080/v1"
-OLLAMA_DEFAULT_BASE = "http://localhost:11434"
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,39 +65,6 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
         credential_attr="deepseek_api_key",
         default_base_url=DEEPSEEK_ANTHROPIC_DEFAULT_BASE,
         capabilities=("chat", "streaming", "tools", "thinking", "native_anthropic"),
-    ),
-    "lmstudio": ProviderDescriptor(
-        provider_id="lmstudio",
-        transport_type="anthropic_messages",
-        static_credential="lm-studio",
-        default_base_url=LMSTUDIO_DEFAULT_BASE,
-        base_url_attr="lm_studio_base_url",
-        proxy_attr="lmstudio_proxy",
-        capabilities=("chat", "streaming", "tools", "native_anthropic", "local"),
-    ),
-    "llamacpp": ProviderDescriptor(
-        provider_id="llamacpp",
-        transport_type="anthropic_messages",
-        static_credential="llamacpp",
-        default_base_url=LLAMACPP_DEFAULT_BASE,
-        base_url_attr="llamacpp_base_url",
-        proxy_attr="llamacpp_proxy",
-        capabilities=("chat", "streaming", "tools", "native_anthropic", "local"),
-    ),
-    "ollama": ProviderDescriptor(
-        provider_id="ollama",
-        transport_type="anthropic_messages",
-        static_credential="ollama",
-        default_base_url=OLLAMA_DEFAULT_BASE,
-        base_url_attr="ollama_base_url",
-        capabilities=(
-            "chat",
-            "streaming",
-            "tools",
-            "thinking",
-            "native_anthropic",
-            "local",
-        ),
     ),
 }
 

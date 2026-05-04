@@ -13,7 +13,6 @@ EXPECTED_CAPABILITIES = {
     "cli",
     "config",
     "extensibility",
-    "local_providers",
     "messaging",
     "openrouter",
     "persistence",

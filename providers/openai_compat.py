@@ -71,6 +71,9 @@ class OpenAIChatTransport(BaseProvider):
         self._provider_name = provider_name
         self._api_key = api_key
         self._base_url = base_url.rstrip("/")
+        # Serialise key rotation + request creation on the shared AsyncOpenAI
+        # client so concurrent coroutines don't overwrite each other's api_key.
+        self._key_lock = asyncio.Lock()
         self._global_rate_limiter = GlobalRateLimiter.get_scoped_instance(
             provider_name.lower(),
             rate_limit=config.rate_limit,
@@ -100,6 +103,7 @@ class OpenAIChatTransport(BaseProvider):
             ),
             http_client=http_client,
         )
+        self._key_rotator.log_summary(provider_name)
 
     async def cleanup(self) -> None:
         """Release HTTP client resources."""
@@ -109,7 +113,9 @@ class OpenAIChatTransport(BaseProvider):
 
     async def list_model_ids(self) -> frozenset[str]:
         """Return model ids from the provider's OpenAI-compatible models endpoint."""
-        payload = await self._client.models.list()
+        async with self._key_lock:
+            self._client.api_key = self._next_api_key()
+            payload = await self._client.models.list()
         return extract_openai_model_ids(payload, provider_name=self._provider_name)
 
     @abstractmethod
@@ -130,20 +136,26 @@ class OpenAIChatTransport(BaseProvider):
 
     async def _create_stream(self, body: dict) -> tuple[Any, dict]:
         """Create a streaming chat completion, optionally retrying once."""
-        try:
-            stream = await self._global_rate_limiter.execute_with_retry(
-                self._client.chat.completions.create, **body, stream=True
-            )
-            return stream, body
-        except Exception as error:
-            retry_body = self._get_retry_request_body(error, body)
-            if retry_body is None:
-                raise
+        # Rotate API key and start the stream atomically so concurrent
+        # coroutines never overwrite each other's key on the shared client.
+        async with self._key_lock:
+            self._client.api_key = self._next_api_key()
+            try:
+                stream = await self._global_rate_limiter.execute_with_retry(
+                    self._client.chat.completions.create, **body, stream=True
+                )
+                return stream, body
+            except Exception as error:
+                retry_body = self._get_retry_request_body(error, body)
+                if retry_body is None:
+                    raise
 
-            stream = await self._global_rate_limiter.execute_with_retry(
-                self._client.chat.completions.create, **retry_body, stream=True
-            )
-            return stream, retry_body
+                # Rotate to next key for retry attempt
+                self._client.api_key = self._next_api_key()
+                stream = await self._global_rate_limiter.execute_with_retry(
+                    self._client.chat.completions.create, **retry_body, stream=True
+                )
+                return stream, retry_body
 
     def _emit_tool_arg_delta(
         self, sse: SSEBuilder, tc_index: int, args: str

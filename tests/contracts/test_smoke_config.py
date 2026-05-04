@@ -5,7 +5,6 @@ from types import SimpleNamespace
 
 from smoke.lib.config import (
     DEFAULT_TARGETS,
-    PROVIDER_SMOKE_DEFAULT_MODELS,
     TARGET_REQUIRED_ENV,
     SmokeConfig,
 )
@@ -13,16 +12,13 @@ from smoke.lib.config import (
 
 def _settings(**overrides):
     values = {
-        "model": "ollama/llama3.1",
+        "model": "deepseek/deepseek-chat",
         "model_opus": None,
         "model_sonnet": None,
         "model_haiku": None,
         "nvidia_nim_api_key": "",
         "open_router_api_key": "",
-        "deepseek_api_key": "",
-        "lm_studio_base_url": "",
-        "llamacpp_base_url": "",
-        "ollama_base_url": "http://localhost:11434",
+        "deepseek_api_key": "deepseek-key",
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -46,41 +42,42 @@ def _smoke_config(**overrides) -> SmokeConfig:
     return SmokeConfig(**values)
 
 
-def test_ollama_is_default_smoke_target() -> None:
-    assert "ollama" in DEFAULT_TARGETS
-    assert "ollama" in TARGET_REQUIRED_ENV
+def test_deepseek_is_default_smoke_target() -> None:
+    assert "providers" in DEFAULT_TARGETS
+    assert "providers" in TARGET_REQUIRED_ENV
 
 
-def test_ollama_provider_configuration_uses_base_url() -> None:
+def test_deepseek_provider_configuration_uses_api_key() -> None:
     config = _smoke_config()
 
-    assert config.has_provider_configuration("ollama")
-    assert config.provider_models()[0].full_model == "ollama/llama3.1"
+    assert config.has_provider_configuration("deepseek")
+    assert config.provider_models()[0].full_model == "deepseek/deepseek-chat"
 
 
-def test_ollama_provider_matrix_filters_models() -> None:
-    config = _smoke_config(provider_matrix=frozenset({"ollama"}))
+def test_deepseek_provider_matrix_filters_models() -> None:
+    config = _smoke_config(provider_matrix=frozenset({"deepseek"}))
 
-    assert [model.provider for model in config.provider_models()] == ["ollama"]
+    assert [model.provider for model in config.provider_models()] == ["deepseek"]
 
 
 def test_provider_smoke_models_cover_configured_providers_independent_of_model_mapping(
     monkeypatch,
 ) -> None:
-    monkeypatch.delenv("FCC_SMOKE_MODEL_DEEPSEEK", raising=False)
+    monkeypatch.setenv("FCC_SMOKE_MODEL_NVIDIA_NIM", "1")
     config = _smoke_config(
         settings=_settings(
-            model="ollama/llama3.1",
-            deepseek_api_key="deepseek-key",
-            ollama_base_url="",
+            model="open_router/test",
+            deepseek_api_key="",
+            open_router_api_key="",
+            nvidia_nim_api_key="nim-key",
         )
     )
 
     models = config.provider_smoke_models()
 
-    assert [model.provider for model in models] == ["deepseek"]
-    assert models[0].full_model == PROVIDER_SMOKE_DEFAULT_MODELS["deepseek"]
-    assert models[0].source == "provider_default"
+    assert [model.provider for model in models] == ["nvidia_nim"]
+    assert models[0].full_model == "nvidia_nim/1"
+    assert models[0].source == "FCC_SMOKE_MODEL_NVIDIA_NIM"
 
 
 def test_provider_smoke_model_override_accepts_model_name_without_prefix(
@@ -90,7 +87,6 @@ def test_provider_smoke_model_override_accepts_model_name_without_prefix(
     config = _smoke_config(
         settings=_settings(
             deepseek_api_key="deepseek-key",
-            ollama_base_url="",
         ),
         provider_matrix=frozenset({"deepseek"}),
     )
@@ -104,31 +100,29 @@ def test_provider_smoke_model_override_accepts_model_name_without_prefix(
 def test_provider_smoke_model_override_accepts_owner_model_name(
     monkeypatch,
 ) -> None:
-    monkeypatch.setenv("FCC_SMOKE_MODEL_NVIDIA_NIM", "z-ai/glm4.7")
+    monkeypatch.setenv("FCC_SMOKE_MODEL_NVIDIA_NIM", "z-ai/glm-5.1")
     config = _smoke_config(
         settings=_settings(
             model="deepseek/deepseek-chat",
             deepseek_api_key="",
             nvidia_nim_api_key="nim-key",
-            ollama_base_url="",
         ),
         provider_matrix=frozenset({"nvidia_nim"}),
     )
 
     models = config.provider_smoke_models()
 
-    assert models[0].full_model == "nvidia_nim/z-ai/glm4.7"
+    assert models[0].full_model == "nvidia_nim/z-ai/glm-5.1"
     assert models[0].source == "FCC_SMOKE_MODEL_NVIDIA_NIM"
 
 
 def test_provider_smoke_model_override_rejects_wrong_provider_prefix(
     monkeypatch,
 ) -> None:
-    monkeypatch.setenv("FCC_SMOKE_MODEL_DEEPSEEK", "ollama/llama3.1")
+    monkeypatch.setenv("FCC_SMOKE_MODEL_DEEPSEEK", "open_router/llama3.1")
     config = _smoke_config(
         settings=_settings(
             deepseek_api_key="deepseek-key",
-            ollama_base_url="",
         ),
         provider_matrix=frozenset({"deepseek"}),
     )
@@ -147,7 +141,6 @@ def test_provider_smoke_matrix_filters_provider_catalog(monkeypatch) -> None:
         settings=_settings(
             deepseek_api_key="deepseek-key",
             nvidia_nim_api_key="nim-key",
-            ollama_base_url="",
         ),
         provider_matrix=frozenset({"nvidia_nim"}),
     )
@@ -157,19 +150,14 @@ def test_provider_smoke_matrix_filters_provider_catalog(monkeypatch) -> None:
     ]
 
 
-def test_provider_smoke_includes_local_provider_when_model_mapping_uses_it(
+def test_provider_smoke_does_not_include_unmapped_cloud_when_unconfigured(
     monkeypatch,
 ) -> None:
-    monkeypatch.delenv("FCC_SMOKE_MODEL_OLLAMA", raising=False)
-    config = _smoke_config()
-
-    assert [model.provider for model in config.provider_smoke_models()] == ["ollama"]
-
-
-def test_provider_smoke_does_not_include_default_local_urls_when_unmapped(
-    monkeypatch,
-) -> None:
-    monkeypatch.delenv("FCC_SMOKE_MODEL_OLLAMA", raising=False)
-    config = _smoke_config(settings=_settings(model="nvidia_nim/test"))
+    monkeypatch.delenv("FCC_SMOKE_MODEL_NVIDIA_NIM", raising=False)
+    config = _smoke_config(
+        settings=_settings(
+            model="deepseek/test", nvidia_nim_api_key="", deepseek_api_key=""
+        )
+    )
 
     assert config.provider_smoke_models() == []

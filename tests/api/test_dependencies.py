@@ -17,9 +17,7 @@ from api.dependencies import (
 from config.nim import NimSettings
 from providers.deepseek import DeepSeekProvider
 from providers.exceptions import ServiceUnavailableError, UnknownProviderTypeError
-from providers.lmstudio import LMStudioProvider
 from providers.nvidia_nim import NvidiaNimProvider
-from providers.ollama import OllamaProvider
 from providers.open_router import OpenRouterProvider
 from providers.registry import ProviderRegistry
 
@@ -35,8 +33,6 @@ def _make_mock_settings(**overrides):
     mock.provider_max_concurrency = 5
     mock.open_router_api_key = "test_openrouter_key"
     mock.deepseek_api_key = "test_deepseek_key"
-    mock.lm_studio_base_url = "http://localhost:1234/v1"
-    mock.ollama_base_url = "http://localhost:11434"
     mock.nim = NimSettings()
     mock.http_read_timeout = 300.0
     mock.http_write_timeout = 10.0
@@ -121,31 +117,6 @@ async def test_get_provider_open_router():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_lmstudio():
-    """Test that provider_type=lmstudio returns LMStudioProvider."""
-    with patch("api.dependencies.get_settings") as mock_settings:
-        mock_settings.return_value = _make_mock_settings(provider_type="lmstudio")
-
-        provider = get_provider()
-
-        assert isinstance(provider, LMStudioProvider)
-        assert provider._base_url == "http://localhost:1234/v1"
-
-
-@pytest.mark.asyncio
-async def test_get_provider_ollama():
-    """Test that provider_type=ollama returns OllamaProvider without an API key."""
-    with patch("api.dependencies.get_settings") as mock_settings:
-        mock_settings.return_value = _make_mock_settings(provider_type="ollama")
-
-        provider = get_provider()
-
-        assert isinstance(provider, OllamaProvider)
-        assert provider._base_url == "http://localhost:11434"
-        assert provider._api_key == "ollama"
-
-
-@pytest.mark.asyncio
 async def test_get_provider_deepseek():
     """Test that provider_type=deepseek returns DeepSeekProvider."""
     with patch("api.dependencies.get_settings") as mock_settings:
@@ -186,21 +157,6 @@ async def test_get_provider_deepseek_passes_enable_model_thinking():
 
         assert isinstance(provider, DeepSeekProvider)
         assert provider._config.enable_thinking is False
-
-
-@pytest.mark.asyncio
-async def test_get_provider_lmstudio_uses_lm_studio_base_url():
-    """LM Studio provider uses lm_studio_base_url from settings."""
-    with patch("api.dependencies.get_settings") as mock_settings:
-        mock_settings.return_value = _make_mock_settings(
-            provider_type="lmstudio",
-            lm_studio_base_url="http://custom:9999/v1",
-        )
-
-        provider = get_provider()
-
-        assert isinstance(provider, LMStudioProvider)
-        assert provider._base_url == "http://custom:9999/v1"
 
 
 @pytest.mark.asyncio
@@ -373,11 +329,11 @@ async def test_get_provider_for_type_different_types():
         mock_settings.return_value = _make_mock_settings()
 
         nim = get_provider_for_type("nvidia_nim")
-        lmstudio = get_provider_for_type("lmstudio")
+        open_router = get_provider_for_type("open_router")
 
         assert isinstance(nim, NvidiaNimProvider)
-        assert isinstance(lmstudio, LMStudioProvider)
-        assert nim is not lmstudio
+        assert isinstance(open_router, OpenRouterProvider)
+        assert nim is not open_router
 
 
 @pytest.mark.asyncio
@@ -400,18 +356,18 @@ async def test_cleanup_provider_cleans_all():
         mock_settings.return_value = _make_mock_settings()
 
         nim = get_provider_for_type("nvidia_nim")
-        lmstudio = get_provider_for_type("lmstudio")
+        open_router = get_provider_for_type("open_router")
 
         assert isinstance(nim, NvidiaNimProvider)
-        assert isinstance(lmstudio, LMStudioProvider)
+        assert isinstance(open_router, OpenRouterProvider)
 
         nim._client = AsyncMock()
-        lmstudio._client = AsyncMock()
+        open_router._client = AsyncMock()
 
         await cleanup_provider()
 
         nim._client.aclose.assert_called_once()
-        lmstudio._client.aclose.assert_called_once()
+        open_router._client.aclose.assert_called_once()
 
 
 def test_resolve_provider_per_app_uses_separate_registries() -> None:

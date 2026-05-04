@@ -29,7 +29,7 @@ class TestSettings:
         monkeypatch.delenv("HTTP_CONNECT_TIMEOUT", raising=False)
         monkeypatch.setitem(Settings.model_config, "env_file", ())
         settings = Settings()
-        assert settings.model == "nvidia_nim/z-ai/glm4.7"
+        assert settings.model == "nvidia_nim/z-ai/glm-5.1"
         assert isinstance(settings.provider_rate_limit, int)
         assert isinstance(settings.provider_rate_window, int)
         assert isinstance(settings.nim.temperature, float)
@@ -72,31 +72,6 @@ class TestSettings:
         from providers.nvidia_nim import NVIDIA_NIM_DEFAULT_BASE
 
         assert NVIDIA_NIM_DEFAULT_BASE == "https://integrate.api.nvidia.com/v1"
-
-    def test_lm_studio_base_url_from_env(self, monkeypatch):
-        """LM_STUDIO_BASE_URL env var is loaded into settings."""
-        from config.settings import Settings
-
-        monkeypatch.setenv("LM_STUDIO_BASE_URL", "http://custom:5678/v1")
-        settings = Settings()
-        assert settings.lm_studio_base_url == "http://custom:5678/v1"
-
-    def test_ollama_base_url_defaults_to_root(self, monkeypatch):
-        """OLLAMA_BASE_URL defaults to the Anthropic-compatible Ollama root URL."""
-        from config.settings import Settings
-
-        monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
-        monkeypatch.setitem(Settings.model_config, "env_file", ())
-        settings = Settings()
-        assert settings.ollama_base_url == "http://localhost:11434"
-
-    def test_ollama_base_url_rejects_v1_suffix(self, monkeypatch):
-        """OLLAMA_BASE_URL must not include /v1 for native Anthropic messages."""
-        from config.settings import Settings
-
-        monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
-        with pytest.raises(ValidationError, match="without /v1"):
-            Settings()
 
     def test_provider_rate_limit_from_env(self, monkeypatch):
         """PROVIDER_RATE_LIMIT env var is loaded into settings."""
@@ -507,9 +482,6 @@ class TestPerModelMapping:
                 "open_router/anthropic/claude-3-haiku",
             ),
             ({"MODEL": "deepseek/deepseek-chat"}, "deepseek/deepseek-chat", None),
-            ({"MODEL": "lmstudio/qwen2.5-7b"}, "lmstudio/qwen2.5-7b", None),
-            ({"MODEL": "llamacpp/local-model"}, "llamacpp/local-model", None),
-            ({"MODEL": "ollama/llama3.1"}, "ollama/llama3.1", None),
         ],
     )
     def test_settings_models_from_env(
@@ -537,9 +509,9 @@ class TestPerModelMapping:
         """MODEL_HAIKU env var is loaded."""
         from config.settings import Settings
 
-        monkeypatch.setenv("MODEL_HAIKU", "lmstudio/qwen2.5-7b")
+        monkeypatch.setenv("MODEL_HAIKU", "open_router/anthropic/claude-3-haiku")
         s = Settings()
-        assert s.model_haiku == "lmstudio/qwen2.5-7b"
+        assert s.model_haiku == "open_router/anthropic/claude-3-haiku"
 
     def test_model_opus_invalid_provider_raises(self, monkeypatch):
         """MODEL_OPUS with invalid provider prefix raises ValidationError."""
@@ -601,10 +573,19 @@ class TestPerModelMapping:
         from config.settings import Settings
 
         s = Settings()
-        s.model_haiku = "lmstudio/qwen2.5-7b"
-        assert s.resolve_model("claude-3-haiku-20240307") == "lmstudio/qwen2.5-7b"
-        assert s.resolve_model("claude-3-5-haiku-20241022") == "lmstudio/qwen2.5-7b"
-        assert s.resolve_model("claude-haiku-4-20250514") == "lmstudio/qwen2.5-7b"
+        s.model_haiku = "open_router/anthropic/claude-3-haiku"
+        assert (
+            s.resolve_model("claude-3-haiku-20240307")
+            == "open_router/anthropic/claude-3-haiku"
+        )
+        assert (
+            s.resolve_model("claude-3-5-haiku-20241022")
+            == "open_router/anthropic/claude-3-haiku"
+        )
+        assert (
+            s.resolve_model("claude-haiku-4-20250514")
+            == "open_router/anthropic/claude-3-haiku"
+        )
 
     def test_resolve_model_fallback_when_override_not_set(self):
         """resolve_model falls back to MODEL when model override is None."""
@@ -644,9 +625,6 @@ class TestPerModelMapping:
         assert Settings.parse_provider_type("nvidia_nim/meta/llama") == "nvidia_nim"
         assert Settings.parse_provider_type("open_router/deepseek/r1") == "open_router"
         assert Settings.parse_provider_type("deepseek/deepseek-chat") == "deepseek"
-        assert Settings.parse_provider_type("lmstudio/qwen") == "lmstudio"
-        assert Settings.parse_provider_type("llamacpp/model") == "llamacpp"
-        assert Settings.parse_provider_type("ollama/llama3.1") == "ollama"
 
     def test_parse_model_name(self):
         """parse_model_name extracts model name from model string."""
@@ -654,9 +632,6 @@ class TestPerModelMapping:
 
         assert Settings.parse_model_name("nvidia_nim/meta/llama") == "meta/llama"
         assert Settings.parse_model_name("deepseek/deepseek-chat") == "deepseek-chat"
-        assert Settings.parse_model_name("lmstudio/qwen") == "qwen"
-        assert Settings.parse_model_name("llamacpp/model") == "model"
-        assert Settings.parse_model_name("ollama/llama3.1") == "llama3.1"
 
     def test_configured_chat_model_refs_collects_unique_models_with_sources(
         self, monkeypatch

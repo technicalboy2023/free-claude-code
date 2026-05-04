@@ -22,7 +22,7 @@ class NativeProvider(AnthropicMessagesTransport):
             default_base_url="https://example.test/v1",
         )
 
-    def _request_headers(self) -> dict[str, str]:
+    def _request_headers(self, *, api_key: str | None = None) -> dict[str, str]:
         return {"Content-Type": "application/json", "X-Test": "1"}
 
 

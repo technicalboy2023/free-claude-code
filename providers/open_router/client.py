@@ -47,18 +47,19 @@ class OpenRouterProvider(AnthropicMessagesTransport):
             thinking_enabled=self._is_thinking_enabled(request, thinking_enabled),
         )
 
-    def _request_headers(self) -> dict[str, str]:
+    def _request_headers(self, *, api_key: str | None = None) -> dict[str, str]:
         """Return OpenRouter's Anthropic-compatible messages headers."""
+        key = api_key or self._api_key
         return {
             "Accept": "text/event-stream",
-            "Authorization": f"Bearer {self._api_key}",
+            "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
             "anthropic-version": _ANTHROPIC_VERSION,
         }
 
-    def _model_list_headers(self) -> dict[str, str]:
+    def _model_list_headers(self, *, api_key: str) -> dict[str, str]:
         """Return OpenRouter's OpenAI-compatible model-list headers."""
-        return {"Authorization": f"Bearer {self._api_key}"}
+        return {"Authorization": f"Bearer {api_key}"}
 
     def _extract_model_ids_from_model_list_payload(
         self, payload: Any

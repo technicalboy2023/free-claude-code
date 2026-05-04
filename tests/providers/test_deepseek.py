@@ -68,7 +68,7 @@ def test_init(deepseek_config):
 
 
 def test_request_headers_includes_x_api_key(deepseek_provider):
-    h = deepseek_provider._request_headers()
+    h = deepseek_provider._request_headers(api_key=deepseek_provider._api_key)
     assert h["x-api-key"] == "test_deepseek_key"
     assert h["Content-Type"] == "application/json"
     assert h["Accept"] == "text/event-stream"

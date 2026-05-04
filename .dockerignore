@@ -1,0 +1,50 @@
+# ========================
+# Docker Build Exclusions
+# ========================
+
+# Environment & secrets (CRITICAL: never bake .env into images)
+.env
+.env.*
+!.env.example
+
+# Version control
+.git
+.gitignore
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.venv
+venv
+
+# IDE / editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Test artifacts
+.pytest_cache
+.coverage
+htmlcov
+tests/
+
+# Logs
+*.log
+server.log
+
+# Docker-in-Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Documentation & CI
+README.md
+PLAN.md
+AGENTS.md
+CLAUDE.md
+render.yaml
+.github/

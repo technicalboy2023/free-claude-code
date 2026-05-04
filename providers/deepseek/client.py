@@ -31,21 +31,26 @@ class DeepSeekProvider(AnthropicMessagesTransport):
             thinking_enabled=self._is_thinking_enabled(request, thinking_enabled),
         )
 
-    def _request_headers(self) -> dict[str, str]:
+    def _request_headers(self, *, api_key: str | None = None) -> dict[str, str]:
+        key = api_key or self._api_key
         return {
             "Accept": "text/event-stream",
             "Content-Type": "application/json",
-            "x-api-key": self._api_key,
+            "x-api-key": key,
         }
 
-    async def _send_model_list_request(self) -> httpx.Response:
+    async def _send_model_list_request(
+        self, *, api_key: str | None = None
+    ) -> httpx.Response:
         """DeepSeek lists models from the OpenAI-format root, not /anthropic."""
         url = str(
             httpx.URL(self._base_url).copy_with(
                 path="/models", query=None, fragment=None
             )
         )
-        return await self._client.get(url, headers=self._model_list_headers())
+        return await self._client.get(
+            url, headers=self._model_list_headers(api_key=api_key or self._api_key)
+        )
 
-    def _model_list_headers(self) -> dict[str, str]:
-        return {"Authorization": f"Bearer {self._api_key}"}
+    def _model_list_headers(self, *, api_key: str) -> dict[str, str]:
+        return {"Authorization": f"Bearer {api_key}"}

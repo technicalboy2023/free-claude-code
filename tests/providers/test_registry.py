@@ -8,10 +8,7 @@ from config.nim import NimSettings
 from config.provider_ids import SUPPORTED_PROVIDER_IDS
 from providers.deepseek import DeepSeekProvider
 from providers.exceptions import UnknownProviderTypeError
-from providers.llamacpp import LlamaCppProvider
-from providers.lmstudio import LMStudioProvider
 from providers.nvidia_nim import NvidiaNimProvider
-from providers.ollama import OllamaProvider
 from providers.open_router import OpenRouterProvider
 from providers.registry import (
     PROVIDER_DESCRIPTORS,
@@ -27,13 +24,7 @@ def _make_settings(**overrides):
     mock.nvidia_nim_api_key = "test_key"
     mock.open_router_api_key = "test_openrouter_key"
     mock.deepseek_api_key = "test_deepseek_key"
-    mock.lm_studio_base_url = "http://localhost:1234/v1"
-    mock.llamacpp_base_url = "http://localhost:8080/v1"
-    mock.ollama_base_url = "http://localhost:11434"
-    mock.nvidia_nim_proxy = ""
-    mock.open_router_proxy = ""
-    mock.lmstudio_proxy = ""
-    mock.llamacpp_proxy = ""
+
     mock.provider_rate_limit = 40
     mock.provider_rate_window = 60
     mock.provider_max_concurrency = 5
@@ -71,14 +62,6 @@ def test_descriptors_cover_advertised_provider_ids():
         assert descriptor.capabilities
 
 
-def test_ollama_descriptor_uses_native_anthropic_transport():
-    descriptor = PROVIDER_DESCRIPTORS["ollama"]
-
-    assert descriptor.transport_type == "anthropic_messages"
-    assert descriptor.default_base_url == "http://localhost:11434"
-    assert "native_anthropic" in descriptor.capabilities
-
-
 def test_create_provider_uses_native_openrouter_by_default():
     with patch("httpx.AsyncClient"):
         provider = create_provider("open_router", _make_settings())
@@ -91,9 +74,6 @@ def test_create_provider_instantiates_each_builtin():
     cases = {
         "nvidia_nim": NvidiaNimProvider,
         "deepseek": DeepSeekProvider,
-        "lmstudio": LMStudioProvider,
-        "llamacpp": LlamaCppProvider,
-        "ollama": OllamaProvider,
     }
 
     with (

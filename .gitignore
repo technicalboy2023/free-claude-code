@@ -1,14 +1,44 @@
-__pycache__
-.claude
-.cursor
-.pytest_cache
-.ruff_cache
-.serena
-.venv
-agent_workspace
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+
+# Environment secrets
 .env
+
+# IDE / Editor
+.claude/
+.cursor/
+.serena/
+.vscode/
+.idea/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.smoke-results/
+
+# Linting / Formatting
+.ruff_cache/
+
+# Logs
 server.log
 debug-*.log
-.coverage
-llama_cache
-.smoke-results
+*.log
+
+# Runtime artifacts
+agent_workspace/
+
+# Docker (local)
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db

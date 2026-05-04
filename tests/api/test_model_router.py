@@ -62,7 +62,7 @@ def test_model_router_resolves_per_model_thinking(settings):
 
 
 def test_model_router_applies_haiku_override(settings):
-    settings.model_haiku = "lmstudio/qwen2.5-7b"
+    settings.model_haiku = "llamacpp/qwen2.5-7b"
 
     routed = ModelRouter(settings).resolve_messages_request(
         MessagesRequest(
@@ -73,7 +73,7 @@ def test_model_router_applies_haiku_override(settings):
     )
 
     assert routed.request.model == "qwen2.5-7b"
-    assert routed.resolved.provider_model_ref == "lmstudio/qwen2.5-7b"
+    assert routed.resolved.provider_model_ref == "llamacpp/qwen2.5-7b"
 
 
 def test_model_router_applies_sonnet_override(settings):
@@ -164,7 +164,7 @@ def test_model_router_direct_prefixed_model_uses_provider_model_for_thinking(set
 
 
 def test_model_router_routes_token_count_request(settings):
-    settings.model_haiku = "lmstudio/qwen2.5-7b"
+    settings.model_haiku = "llamacpp/qwen2.5-7b"
 
     request = TokenCountRequest(
         model="claude-3-haiku-20240307",

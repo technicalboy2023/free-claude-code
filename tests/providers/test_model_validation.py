@@ -14,12 +14,9 @@ from config.settings import Settings
 from providers.base import BaseProvider, ProviderConfig
 from providers.deepseek import DeepSeekProvider
 from providers.exceptions import ModelListResponseError, ServiceUnavailableError
-from providers.lmstudio import LMStudioProvider
-from providers.model_listing import ProviderModelInfo
 from providers.nvidia_nim import NvidiaNimProvider
-from providers.ollama import OllamaProvider
 from providers.open_router import OpenRouterProvider
-from providers.registry import ProviderRegistry
+from providers.registry import ProviderModelInfo, ProviderRegistry
 
 
 def _settings(
@@ -65,22 +62,6 @@ async def test_nim_lists_openai_compatible_model_ids() -> None:
         return_value=SimpleNamespace(data=[SimpleNamespace(id="nvidia/model")]),
     ):
         assert await provider.list_model_ids() == frozenset({"nvidia/model"})
-
-
-@pytest.mark.asyncio
-async def test_native_openai_compatible_provider_lists_model_ids() -> None:
-    provider = LMStudioProvider(
-        ProviderConfig(api_key="lm-studio", base_url="http://localhost:1234/v1")
-    )
-    with patch.object(
-        provider._client,
-        "get",
-        new_callable=AsyncMock,
-        return_value=_response(200, {"data": [{"id": "local/model"}]}),
-    ) as mock_get:
-        assert await provider.list_model_ids() == frozenset({"local/model"})
-
-    mock_get.assert_awaited_once_with("/models", headers={})
 
 
 @pytest.mark.asyncio
@@ -214,66 +195,6 @@ async def test_openrouter_model_metadata_rejects_malformed_ids() -> None:
         pytest.raises(ModelListResponseError, match="malformed"),
     ):
         await provider.list_model_infos()
-
-
-@pytest.mark.asyncio
-async def test_ollama_lists_native_tag_model_ids() -> None:
-    provider = OllamaProvider(
-        ProviderConfig(api_key="ollama", base_url="http://localhost:11434")
-    )
-    with patch.object(
-        provider._client,
-        "get",
-        new_callable=AsyncMock,
-        return_value=_response(
-            200,
-            {
-                "models": [
-                    {"name": "llama3.1:latest", "model": "llama3.1:latest"},
-                    {"name": "qwen3"},
-                ]
-            },
-        ),
-    ) as mock_get:
-        assert await provider.list_model_ids() == frozenset(
-            {"llama3.1:latest", "qwen3"}
-        )
-
-    mock_get.assert_awaited_once_with("http://localhost:11434/api/tags")
-
-
-@pytest.mark.asyncio
-async def test_model_listing_rejects_malformed_payload() -> None:
-    provider = LMStudioProvider(
-        ProviderConfig(api_key="lm-studio", base_url="http://localhost:1234/v1")
-    )
-    with (
-        patch.object(
-            provider._client,
-            "get",
-            new_callable=AsyncMock,
-            return_value=_response(200, {"data": [{}]}),
-        ),
-        pytest.raises(ModelListResponseError, match="malformed"),
-    ):
-        await provider.list_model_ids()
-
-
-@pytest.mark.asyncio
-async def test_model_listing_raises_http_status_errors() -> None:
-    provider = LMStudioProvider(
-        ProviderConfig(api_key="lm-studio", base_url="http://localhost:1234/v1")
-    )
-    with (
-        patch.object(
-            provider._client,
-            "get",
-            new_callable=AsyncMock,
-            return_value=_response(503, {"error": "down"}),
-        ),
-        pytest.raises(httpx.HTTPStatusError),
-    ):
-        await provider.list_model_ids()
 
 
 class FakeProvider(BaseProvider):
@@ -418,20 +339,20 @@ async def test_registry_refresh_model_list_cache_uses_configured_remote_keys_and
     registry = ProviderRegistry(
         {
             "open_router": FakeProvider(frozenset({"anthropic/claude-sonnet"})),
-            "lmstudio": FakeProvider(frozenset({"local-qwen"})),
-            "ollama": FakeProvider(frozenset({"llama3.1"})),
+            "deepseek": FakeProvider(frozenset({"deepseek-chat"})),
         }
     )
     settings = _settings(
-        model="lmstudio/local-qwen",
+        model="open_router/anthropic/claude-sonnet",
         open_router_api_key="open-router-key",
+        deepseek_api_key="deepseek-key",
     )
 
     await registry.refresh_model_list_cache(settings)
 
     assert registry.cached_model_ids() == {
         "open_router": frozenset({"anthropic/claude-sonnet"}),
-        "lmstudio": frozenset({"local-qwen"}),
+        "deepseek": frozenset({"deepseek-chat"}),
     }
 
 

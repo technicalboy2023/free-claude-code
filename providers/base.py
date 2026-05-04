@@ -18,6 +18,7 @@ class ProviderConfig(BaseModel):
     """
 
     api_key: str
+    api_keys: list[str] = []
     base_url: str | None = None
     rate_limit: int | None = None
     rate_window: int = 60
@@ -36,6 +37,15 @@ class BaseProvider(ABC):
 
     def __init__(self, config: ProviderConfig):
         self._config = config
+        # Build key rotator: prefer explicit multi-key list, fall back to single key
+        from providers.key_rotator import KeyRotator
+
+        keys = config.api_keys if config.api_keys else [config.api_key]
+        self._key_rotator = KeyRotator(keys)
+
+    def _next_api_key(self) -> str:
+        """Return the next API key via round-robin rotation."""
+        return self._key_rotator.next_key()
 
     def _is_thinking_enabled(
         self, request: Any, thinking_enabled: bool | None = None

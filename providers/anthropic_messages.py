@@ -79,6 +79,7 @@ class AnthropicMessagesTransport(BaseProvider):
                 write=config.http_write_timeout,
             ),
         )
+        self._key_rotator.log_summary(provider_name)
 
     async def cleanup(self) -> None:
         """Release HTTP client resources."""
@@ -90,21 +91,24 @@ class AnthropicMessagesTransport(BaseProvider):
 
     async def list_model_infos(self) -> frozenset[ProviderModelInfo]:
         """Return model ids plus optional metadata from a ``/models`` endpoint."""
-        response = await self._send_model_list_request()
+        request_key = self._next_api_key()
+        response = await self._send_model_list_request(api_key=request_key)
         try:
             payload = _model_list_json(response, provider_name=self._provider_name)
             return self._extract_model_infos_from_model_list_payload(payload)
         finally:
             await response.aclose()
 
-    async def _send_model_list_request(self) -> httpx.Response:
+    async def _send_model_list_request(
+        self, *, api_key: str | None = None
+    ) -> httpx.Response:
         """Query the provider endpoint that advertises available model ids."""
         return await self._client.get(
             "/models",
-            headers=self._model_list_headers(),
+            headers=self._model_list_headers(api_key=api_key or self._api_key),
         )
 
-    def _model_list_headers(self) -> dict[str, str]:
+    def _model_list_headers(self, *, api_key: str) -> dict[str, str]:
         """Return headers for model-list requests."""
         return {}
 
@@ -122,8 +126,12 @@ class AnthropicMessagesTransport(BaseProvider):
             self._extract_model_ids_from_model_list_payload(payload)
         )
 
-    def _request_headers(self) -> dict[str, str]:
-        """Return headers for the native messages request."""
+    def _request_headers(self, *, api_key: str | None = None) -> dict[str, str]:
+        """Return headers for the native messages request.
+
+        ``api_key`` is the per-request rotated key.  Subclasses must use it
+        rather than reading ``self._api_key`` to avoid concurrent-mutation bugs.
+        """
         return {"Content-Type": "application/json"}
 
     def _build_request_body(
@@ -137,13 +145,15 @@ class AnthropicMessagesTransport(BaseProvider):
             thinking_enabled=thinking_enabled,
         )
 
-    async def _send_stream_request(self, body: dict) -> httpx.Response:
+    async def _send_stream_request(
+        self, body: dict, *, api_key: str | None = None
+    ) -> httpx.Response:
         """Create a streaming messages response."""
         request = self._client.build_request(
             "POST",
             "/messages",
             json=body,
-            headers=self._request_headers(),
+            headers=self._request_headers(api_key=api_key),
         )
         return await self._client.send(request, stream=True)
 
@@ -357,7 +367,12 @@ class AnthropicMessagesTransport(BaseProvider):
 
                 async def _validated_stream_send() -> httpx.Response:
                     """Send request; raise inside retry loop on 429 so rate limiter can backoff."""
-                    send_response = await self._send_stream_request(body)
+                    # Select a per-request key (thread-safe round-robin) and
+                    # pass it through so no shared state is mutated.
+                    request_key = self._next_api_key()
+                    send_response = await self._send_stream_request(
+                        body, api_key=request_key
+                    )
                     if send_response.status_code == 429:
                         await send_response.aclose()
                         send_response.raise_for_status()

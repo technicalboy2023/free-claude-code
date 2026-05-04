@@ -50,31 +50,10 @@ def _create_deepseek(config: ProviderConfig, _settings: Settings) -> BaseProvide
     return DeepSeekProvider(config)
 
 
-def _create_lmstudio(config: ProviderConfig, _settings: Settings) -> BaseProvider:
-    from providers.lmstudio import LMStudioProvider
-
-    return LMStudioProvider(config)
-
-
-def _create_llamacpp(config: ProviderConfig, _settings: Settings) -> BaseProvider:
-    from providers.llamacpp import LlamaCppProvider
-
-    return LlamaCppProvider(config)
-
-
-def _create_ollama(config: ProviderConfig, _settings: Settings) -> BaseProvider:
-    from providers.ollama import OllamaProvider
-
-    return OllamaProvider(config)
-
-
 PROVIDER_FACTORIES: dict[str, ProviderFactory] = {
     "nvidia_nim": _create_nvidia_nim,
     "open_router": _create_open_router,
     "deepseek": _create_deepseek,
-    "lmstudio": _create_lmstudio,
-    "llamacpp": _create_llamacpp,
-    "ollama": _create_ollama,
 }
 
 if set(PROVIDER_DESCRIPTORS) != set(SUPPORTED_PROVIDER_IDS) or set(
@@ -122,8 +101,14 @@ def build_provider_config(
         settings, descriptor.base_url_attr, descriptor.default_base_url or ""
     )
     proxy = _string_attr(settings, descriptor.proxy_attr)
+    # Parse comma-separated keys for round-robin rotation
+    from providers.key_rotator import parse_key_string
+
+    all_keys = parse_key_string(credential)
+    first_key = all_keys[0] if all_keys else credential
     return ProviderConfig(
-        api_key=credential,
+        api_key=first_key,
+        api_keys=all_keys,
         base_url=base_url or descriptor.default_base_url,
         rate_limit=settings.provider_rate_limit,
         rate_window=settings.provider_rate_window,
