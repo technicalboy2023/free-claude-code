@@ -8,11 +8,14 @@ RUN apt-get update && apt-get install -y curl ca-certificates && rm -rf /var/lib
 RUN groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid 1000 --create-home appuser
 
-# Install uv using the official installer script (as root, before switching user)
+# Switch to the non-root user early so all installations belong to appuser
+USER appuser
+
+# Install uv using the official installer script
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Add uv to PATH (installed to /root/.local/bin by the installer)
-ENV PATH="/root/.local/bin:$PATH"
+# Add uv to PATH (installed to /home/appuser/.local/bin)
+ENV PATH="/home/appuser/.local/bin:$PATH"
 
 # Set the working directory
 WORKDIR /app
@@ -21,18 +24,16 @@ WORKDIR /app
 RUN uv python install 3.14
 
 # Copy project configuration files first to leverage Docker cache
-COPY pyproject.toml uv.lock ./
+COPY --chown=appuser:appuser pyproject.toml uv.lock ./
 
 # Install project dependencies (excluding dev dependencies)
 # We use --frozen to ensure deterministic builds from uv.lock
 RUN uv sync --frozen --no-dev
 
 # Copy the rest of the application code
-COPY . .
+COPY --chown=appuser:appuser . .
 
-# Transfer ownership and switch to non-root user
-RUN chown -R appuser:appuser /app
-USER appuser
+
 
 # Expose the default port (Render will override this dynamically with $PORT)
 EXPOSE 8082
