@@ -12,7 +12,7 @@ Use Claude Code CLI, VS Code, JetBrains ACP, or chat bots through your own Anthr
 [![Code style: Ruff](https://img.shields.io/badge/code%20formatting-ruff-f5a623.svg?style=for-the-badge)](https://github.com/astral-sh/ruff)
 [![Logging: Loguru](https://img.shields.io/badge/logging-loguru-4ecdc4.svg?style=for-the-badge)](https://github.com/Delgan/loguru)
 
-Free Claude Code routes Anthropic Messages API traffic from Claude Code to NVIDIA NIM, OpenRouter, or DeepSeek — with **round-robin API key rotation** for rate-limit resilience. It keeps Claude Code's client-side protocol stable while letting you choose free or paid models.
+Free Claude Code routes Anthropic Messages API traffic from Claude Code to NVIDIA NIM, OpenRouter, DeepSeek, or Ollama Cloud — with **round-robin API key rotation** for rate-limit resilience. It keeps Claude Code's client-side protocol stable while letting you choose free or paid models.
 
 [Quick Start](#quick-start) · [Providers](#choose-a-provider) · [Key Rotation](#round-robin-key-rotation) · [Clients](#connect-claude-code) · [Deploy](#deploy-to-render) · [Development](#development)
 
@@ -25,7 +25,7 @@ Free Claude Code routes Anthropic Messages API traffic from Claude Code to NVIDI
 ## What You Get
 
 - **Drop-in proxy** for Claude Code's Anthropic API calls.
-- **Three cloud providers**: NVIDIA NIM, OpenRouter, and DeepSeek.
+- **Four cloud providers**: NVIDIA NIM, OpenRouter, DeepSeek, and Ollama Cloud.
 - **Round-robin key rotation**: distribute requests across multiple API keys per provider.
 - **Per-model routing**: send Opus, Sonnet, Haiku, and fallback traffic to different providers.
 - **Native model picker**: Claude Code's `/model` command discovers all available models.
@@ -129,6 +129,7 @@ provider_id/model/name
 | <img src="https://cdn.simpleicons.org/nvidia/76B900" alt="" width="18" height="18"> NVIDIA NIM | `nvidia_nim/...` | OpenAI chat translation | `NVIDIA_NIM_API_KEY` | `https://integrate.api.nvidia.com/v1` |
 | <img src="https://cdn.simpleicons.org/openrouter/6C47FF" alt="" width="18" height="18"> OpenRouter | `open_router/...` | Anthropic Messages | `OPENROUTER_API_KEY` | `https://openrouter.ai/api/v1` |
 | <img src="https://cdn.simpleicons.org/deepseek/4D6BFF" alt="" width="18" height="18"> DeepSeek | `deepseek/...` | Anthropic Messages | `DEEPSEEK_API_KEY` | `https://api.deepseek.com/anthropic` |
+| <img src="https://cdn.simpleicons.org/ollama/000000" alt="" width="18" height="18"> Ollama Cloud | `ollama/...` | OpenAI chat translation | `OLLAMA_API_KEY` | `https://ollama.com/v1` |
 
 <details>
 <summary><img src="https://cdn.simpleicons.org/nvidia/76B900" alt="" width="18" height="18"> <b>NVIDIA NIM</b></summary>
@@ -180,6 +181,20 @@ This provider uses DeepSeek's Anthropic-compatible endpoint, not the OpenAI chat
 </details>
 
 <details>
+<summary><img src="https://cdn.simpleicons.org/ollama/000000" alt="" width="18" height="18"> <b>Ollama Cloud</b></summary>
+
+Get a key at [ollama.com](https://ollama.com).
+
+```dotenv
+OLLAMA_API_KEY="your-ollama-key"
+MODEL="ollama/llama3.3"
+```
+
+This provider uses Ollama's OpenAI-compatible endpoint.
+
+</details>
+
+<details>
 <summary><b>Mix providers by model tier</b></summary>
 
 Each tier can use a different provider:
@@ -208,6 +223,7 @@ NVIDIA_NIM_API_KEY="nvapi-key1"
 NVIDIA_NIM_API_KEY="nvapi-key1,nvapi-key2,nvapi-key3"
 OPENROUTER_API_KEY="sk-or-v1-key1,sk-or-v1-key2"
 DEEPSEEK_API_KEY="sk-ds-key1,sk-ds-key2"
+OLLAMA_API_KEY="key1,key2"
 ```
 
 **How it works:**
@@ -336,6 +352,7 @@ This project ships with a `Dockerfile` and `render.yaml` blueprint for one-click
    - `NVIDIA_NIM_API_KEY` (or whichever provider you use)
    - `OPENROUTER_API_KEY` (optional)
    - `DEEPSEEK_API_KEY` (optional)
+   - `OLLAMA_API_KEY` (optional)
    - `ANTHROPIC_AUTH_TOKEN` (auto-generated if using Blueprint)
 5. Deploy — your proxy will be live at `https://your-service.onrender.com`.
 
@@ -373,6 +390,7 @@ Blank per-tier values inherit the fallback. Blank thinking overrides inherit `EN
 NVIDIA_NIM_API_KEY=""
 OPENROUTER_API_KEY=""
 DEEPSEEK_API_KEY=""
+OLLAMA_API_KEY=""
 ```
 
 Proxy settings are per provider:
@@ -380,6 +398,7 @@ Proxy settings are per provider:
 ```dotenv
 NVIDIA_NIM_PROXY=""
 OPENROUTER_PROXY=""
+OLLAMA_PROXY=""
 ```
 
 ### Rate Limits And Timeouts
@@ -431,7 +450,7 @@ Free Claude Code Proxy (:8082)
         │  round-robin key rotation
         │  provider-specific request/stream adapter
         ▼
-NVIDIA NIM / OpenRouter / DeepSeek
+NVIDIA NIM / OpenRouter / DeepSeek / Ollama Cloud
 ```
 
 Important pieces:

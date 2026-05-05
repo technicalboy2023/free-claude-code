@@ -9,6 +9,7 @@ from config.provider_ids import SUPPORTED_PROVIDER_IDS
 from providers.deepseek import DeepSeekProvider
 from providers.exceptions import UnknownProviderTypeError
 from providers.nvidia_nim import NvidiaNimProvider
+from providers.ollama import OllamaProvider
 from providers.open_router import OpenRouterProvider
 from providers.registry import (
     PROVIDER_DESCRIPTORS,
@@ -24,6 +25,7 @@ def _make_settings(**overrides):
     mock.nvidia_nim_api_key = "test_key"
     mock.open_router_api_key = "test_openrouter_key"
     mock.deepseek_api_key = "test_deepseek_key"
+    mock.ollama_api_key = "test_ollama_key"
 
     mock.provider_rate_limit = 40
     mock.provider_rate_window = 60
@@ -74,6 +76,7 @@ def test_create_provider_instantiates_each_builtin():
     cases = {
         "nvidia_nim": NvidiaNimProvider,
         "deepseek": DeepSeekProvider,
+        "ollama": OllamaProvider,
     }
 
     with (
