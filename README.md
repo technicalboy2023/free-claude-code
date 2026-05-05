@@ -114,7 +114,9 @@ ANTHROPIC_AUTH_TOKEN="freecc" ANTHROPIC_BASE_URL="http://localhost:8082" claude
 
 ## Choose A Provider
 
-Model values use this format:
+**How to switch models:** To change your AI model, you only need to edit the `MODEL` variable in your `.env` file (or your Render Environment Variables). The router will automatically detect the change. You do **not** need to edit any other files. Just make sure the corresponding provider's API key is also set.
+
+Model values must use this format:
 
 ```text
 provider_id/model/name
