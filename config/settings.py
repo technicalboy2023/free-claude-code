@@ -142,6 +142,10 @@ class Settings(BaseSettings):
     nvidia_nim_proxy: str = Field(default="", validation_alias="NVIDIA_NIM_PROXY")
     open_router_proxy: str = Field(default="", validation_alias="OPENROUTER_PROXY")
 
+    # ==================== Ollama Config ====================
+    ollama_api_key: str = Field(default="ollama", validation_alias="OLLAMA_API_KEY")
+    ollama_proxy: str = Field(default="", validation_alias="OLLAMA_PROXY")
+
     # ==================== Provider Rate Limiting ====================
     provider_rate_limit: int = Field(default=40, validation_alias="PROVIDER_RATE_LIMIT")
     provider_rate_window: int = Field(

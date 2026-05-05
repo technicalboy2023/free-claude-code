@@ -50,10 +50,17 @@ def _create_deepseek(config: ProviderConfig, _settings: Settings) -> BaseProvide
     return DeepSeekProvider(config)
 
 
+def _create_ollama(config: ProviderConfig, _settings: Settings) -> BaseProvider:
+    from providers.ollama import OllamaProvider
+
+    return OllamaProvider(config)
+
+
 PROVIDER_FACTORIES: dict[str, ProviderFactory] = {
     "nvidia_nim": _create_nvidia_nim,
     "open_router": _create_open_router,
     "deepseek": _create_deepseek,
+    "ollama": _create_ollama,
 }
 
 if set(PROVIDER_DESCRIPTORS) != set(SUPPORTED_PROVIDER_IDS) or set(

@@ -18,6 +18,7 @@ DEEPSEEK_ANTHROPIC_DEFAULT_BASE = "https://api.deepseek.com/anthropic"
 # Historical export name: DeepSeek upstream is the native Anthropic path above.
 DEEPSEEK_DEFAULT_BASE = DEEPSEEK_ANTHROPIC_DEFAULT_BASE
 OPENROUTER_DEFAULT_BASE = "https://openrouter.ai/api/v1"
+OLLAMA_DEFAULT_BASE = "https://ollama.com/v1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +66,15 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
         credential_attr="deepseek_api_key",
         default_base_url=DEEPSEEK_ANTHROPIC_DEFAULT_BASE,
         capabilities=("chat", "streaming", "tools", "thinking", "native_anthropic"),
+    ),
+    "ollama": ProviderDescriptor(
+        provider_id="ollama",
+        transport_type="openai_chat",
+        credential_env=None,
+        credential_attr="ollama_api_key",
+        default_base_url=OLLAMA_DEFAULT_BASE,
+        proxy_attr="ollama_proxy",
+        capabilities=("chat", "streaming"),
     ),
 }
 
