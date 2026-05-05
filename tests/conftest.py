@@ -56,6 +56,20 @@ def open_router_provider(provider_config):
 
 
 @pytest.fixture
+def ollama_provider():
+    from providers.base import ProviderConfig
+    from providers.ollama import OllamaProvider
+
+    config = ProviderConfig(
+        api_key="test_ollama_key",
+        base_url="http://localhost:11434/v1",
+        rate_limit=10,
+        rate_window=60,
+    )
+    return OllamaProvider(config)
+
+
+@pytest.fixture
 def mock_cli_session():
     from messaging.platforms.base import CLISession
 

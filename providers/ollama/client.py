@@ -6,6 +6,7 @@ from typing import Any
 
 from loguru import logger
 
+from config.nim import NimSettings
 from providers.base import ProviderConfig
 from providers.defaults import OLLAMA_DEFAULT_BASE
 from providers.openai_compat import OpenAIChatTransport
@@ -21,6 +22,8 @@ class OllamaProvider(OpenAIChatTransport):
             base_url=config.base_url or OLLAMA_DEFAULT_BASE,
             api_key=config.api_key or "ollama",
         )
+        # Cache a shared NimSettings for request building (thinking always disabled).
+        self._nim_settings = NimSettings()
 
     def _build_request_body(
         self, request: Any, thinking_enabled: bool | None = None
@@ -34,10 +37,8 @@ class OllamaProvider(OpenAIChatTransport):
             len(getattr(request, "messages", [])),
         )
         # Reuse NIM's OpenAI-compat request builder (thinking disabled for Ollama)
-        from config.nim import NimSettings
-
         return build_request_body(
             request,
-            NimSettings(),
+            self._nim_settings,
             thinking_enabled=False,
         )

@@ -54,9 +54,7 @@ Default targets do not send real bot messages or load voice backends:
 | `providers` | multi-turn text, adaptive thinking history, tools, disconnect, errors | configured providers, optional `FCC_SMOKE_MODEL_*` |
 | `tools` | forced tool_use and tool_result continuation | tool-capable configured provider |
 | `rate_limit` | disconnect cleanup and follow-up request | configured provider |
-| `lmstudio` | local `/models` plus native `/messages` through proxy | running LM Studio server |
-| `llamacpp` | local `/models` plus native `/messages` through proxy | running llama-server |
-| `ollama` | local `/api/tags` plus native Anthropic messages through proxy | running Ollama server |
+| `ollama` | OpenAI-compatible chat completions through proxy | `OLLAMA_API_KEY` or running Ollama server |
 
 Side-effectful targets are opt-in:
 
@@ -70,7 +68,7 @@ Side-effectful targets are opt-in:
 
 ```powershell
 $env:FCC_LIVE_SMOKE = "1"
-$env:FCC_SMOKE_PROVIDER_MATRIX = "open_router,nvidia_nim,deepseek,lmstudio,llamacpp,ollama"
+$env:FCC_SMOKE_PROVIDER_MATRIX = "open_router,nvidia_nim,deepseek,ollama"
 uv run pytest smoke/product -n 0 -s --tb=short
 ```
 
@@ -102,8 +100,7 @@ uv run pytest smoke/product -n 0 -s --tb=short
 - `FCC_SMOKE_TARGETS`: comma-separated targets, or `all`.
 - `FCC_SMOKE_PROVIDER_MATRIX`: comma-separated provider prefixes to require.
 - `FCC_SMOKE_MODEL_NVIDIA_NIM`, `FCC_SMOKE_MODEL_OPEN_ROUTER`,
-  `FCC_SMOKE_MODEL_DEEPSEEK`, `FCC_SMOKE_MODEL_LMSTUDIO`,
-  `FCC_SMOKE_MODEL_LLAMACPP`, `FCC_SMOKE_MODEL_OLLAMA`: optional per-provider
+  `FCC_SMOKE_MODEL_DEEPSEEK`, `FCC_SMOKE_MODEL_OLLAMA`: optional per-provider
   smoke model overrides. Values may include the provider prefix or just the model
   name for that provider.
 - `FCC_SMOKE_TIMEOUT_S`: per-request/subprocess timeout, default `45`.
