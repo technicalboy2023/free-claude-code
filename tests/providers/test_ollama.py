@@ -395,9 +395,11 @@ async def test_list_model_ids(ollama_config):
     mock_response = MagicMock()
     mock_response.data = [mock_model1, mock_model2]
 
-    provider._client.models.list = AsyncMock(return_value=mock_response)
-
-    ids = await provider.list_model_ids()
+    with patch.object(
+        provider._client.models, "list", new_callable=AsyncMock
+    ) as mock_list:
+        mock_list.return_value = mock_response
+        ids = await provider.list_model_ids()
 
     assert "llama3.3" in ids
     assert "mistral" in ids
