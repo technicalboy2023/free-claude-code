@@ -32,6 +32,13 @@ htmlcov/
 server.log
 debug-*.log
 *.log
+*.txt
+
+# Debug / Local test artifacts
+claude_req.json
+dump_claude.py
+test_large.py
+test_moonshot.py
 
 # Runtime artifacts
 agent_workspace/

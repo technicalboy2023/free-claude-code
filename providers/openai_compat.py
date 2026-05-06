@@ -146,6 +146,11 @@ class OpenAIChatTransport(BaseProvider):
                 )
                 return stream, body
             except Exception as error:
+                logger.error(f"Error during OpenAI chat.completions.create: {error}")
+                print(f"FAILED BODY: {json.dumps(body, indent=2)}")
+                import traceback
+
+                traceback.print_exc()
                 retry_body = self._get_retry_request_body(error, body)
                 if retry_body is None:
                     raise

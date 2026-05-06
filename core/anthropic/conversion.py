@@ -45,10 +45,74 @@ def _tool_name(tool: Any) -> str:
     return str(getattr(tool, "name", "") or "")
 
 
+_SCHEMA_MAP_KEYS = {"properties", "patternProperties", "dependentSchemas"}
+_SCHEMA_LIST_KEYS = {"allOf", "anyOf", "oneOf", "prefixItems"}
+_SCHEMA_VALUE_KEYS = {
+    "items",
+    "additionalProperties",
+    "contains",
+    "propertyNames",
+    "not",
+}
+
+
+def _sanitize_json_schema(value: Any) -> tuple[bool, Any]:
+    """Recursively strip problematic JSON Schema elements for strict API backends."""
+    if isinstance(value, bool):
+        # Many providers (e.g., VLLM, Ollama) fail on boolean schemas.
+        # Stripping them prevents 400/500s.
+        return False, None
+    if isinstance(value, dict):
+        sanitized: dict[str, Any] = {}
+        for key, item in value.items():
+            if key in _SCHEMA_VALUE_KEYS:
+                keep, sanitized_item = _sanitize_json_schema(item)
+                if keep:
+                    sanitized[key] = sanitized_item
+            elif key in _SCHEMA_LIST_KEYS and isinstance(item, list):
+                sanitized_items = []
+                for schema_item in item:
+                    keep, sanitized_item = _sanitize_json_schema(schema_item)
+                    if keep:
+                        sanitized_items.append(sanitized_item)
+                if sanitized_items:
+                    sanitized[key] = sanitized_items
+            elif key in _SCHEMA_MAP_KEYS and isinstance(item, dict):
+                sanitized_map: dict[str, Any] = {}
+                for map_key, schema_item in item.items():
+                    keep, sanitized_item = _sanitize_json_schema(schema_item)
+                    if keep:
+                        sanitized_map[map_key] = sanitized_item
+                sanitized[key] = sanitized_map
+            else:
+                # Strip metadata keys that cause 400s or 500s across various OpenRouter/VLLM providers.
+                if key not in {
+                    "$schema",
+                    "title",
+                    "$id",
+                    "$comment",
+                    "examples",
+                }:
+                    sanitized[key] = item
+        return True, sanitized
+
+    if isinstance(value, list):
+        sanitized_items = []
+        for item in value:
+            keep, sanitized_item = _sanitize_json_schema(item)
+            if keep:
+                sanitized_items.append(sanitized_item)
+        return True, sanitized_items
+
+    return True, value
+
+
 def _tool_input_schema(tool: Any) -> dict[str, Any]:
     schema = getattr(tool, "input_schema", None)
     if isinstance(schema, dict):
-        return schema
+        _, sanitized = _sanitize_json_schema(schema)
+        if isinstance(sanitized, dict):
+            return sanitized
     return {"type": "object", "properties": {}}
 
 
