@@ -217,7 +217,12 @@ class AppRuntime:
         data_path = os.path.abspath(self.settings.claude_workspace)
         os.makedirs(data_path, exist_ok=True)
 
-        api_url = f"http://{self.settings.host}:{self.settings.port}/v1"
+        _cli_host = (
+            "127.0.0.1"
+            if self.settings.host in ("0.0.0.0", "", "::", "[::]")
+            else self.settings.host
+        )
+        api_url = f"http://{_cli_host}:{self.settings.port}/v1"
         allowed_dirs = [workspace] if self.settings.allowed_dir else []
         plans_dir_abs = os.path.abspath(
             os.path.join(self.settings.claude_workspace, "plans")
