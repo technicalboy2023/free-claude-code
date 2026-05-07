@@ -114,8 +114,10 @@ class OpenAIChatTransport(BaseProvider):
     async def list_model_ids(self) -> frozenset[str]:
         """Return model ids from the provider's OpenAI-compatible models endpoint."""
         async with self._key_lock:
-            self._client.api_key = self._next_api_key()
-            payload = await self._client.models.list()
+            api_key = self._next_api_key()
+        payload = await self._client.models.list(
+            extra_headers={"Authorization": f"Bearer {api_key}"},
+        )
         return extract_openai_model_ids(payload, provider_name=self._provider_name)
 
     @abstractmethod
@@ -136,31 +138,36 @@ class OpenAIChatTransport(BaseProvider):
 
     async def _create_stream(self, body: dict) -> tuple[Any, dict]:
         """Create a streaming chat completion, optionally retrying once."""
-        # Rotate API key and start the stream atomically so concurrent
+        # Rotate API key per-request via extra_headers so concurrent
         # coroutines never overwrite each other's key on the shared client.
         async with self._key_lock:
-            self._client.api_key = self._next_api_key()
-            try:
-                stream = await self._global_rate_limiter.execute_with_retry(
-                    self._client.chat.completions.create, **body, stream=True
-                )
-                return stream, body
-            except Exception as error:
-                logger.error(f"Error during OpenAI chat.completions.create: {error}")
-                print(f"FAILED BODY: {json.dumps(body, indent=2)}")
-                import traceback
+            api_key = self._next_api_key()
+        key_headers = {"Authorization": f"Bearer {api_key}"}
+        try:
+            stream = await self._global_rate_limiter.execute_with_retry(
+                self._client.chat.completions.create,
+                **body,
+                stream=True,
+                extra_headers=key_headers,
+            )
+            return stream, body
+        except Exception as error:
+            logger.error(f"Error during OpenAI chat.completions.create: {error}")
+            retry_body = self._get_retry_request_body(error, body)
+            if retry_body is None:
+                raise
 
-                traceback.print_exc()
-                retry_body = self._get_retry_request_body(error, body)
-                if retry_body is None:
-                    raise
-
-                # Rotate to next key for retry attempt
-                self._client.api_key = self._next_api_key()
-                stream = await self._global_rate_limiter.execute_with_retry(
-                    self._client.chat.completions.create, **retry_body, stream=True
-                )
-                return stream, retry_body
+            # Rotate to next key for retry attempt
+            async with self._key_lock:
+                retry_key = self._next_api_key()
+            retry_headers = {"Authorization": f"Bearer {retry_key}"}
+            stream = await self._global_rate_limiter.execute_with_retry(
+                self._client.chat.completions.create,
+                **retry_body,
+                stream=True,
+                extra_headers=retry_headers,
+            )
+            return stream, retry_body
 
     def _emit_tool_arg_delta(
         self, sse: SSEBuilder, tc_index: int, args: str
