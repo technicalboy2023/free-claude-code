@@ -112,11 +112,18 @@ def require_api_key(
     # Support both raw key in X-API-Key and Bearer token in Authorization
     token = header
     if header.lower().startswith("bearer "):
-        token = header.split(" ", 1)[1]
+        parts = header.split(" ", 1)
+        if len(parts) > 1:
+            token = parts[1]
+        else:
+            raise HTTPException(status_code=401, detail="Invalid API key format")
 
     # Strip anything after the first colon to handle tokens with appended model names
     if token and ":" in token:
         token = token.split(":", 1)[0]
+
+    if not token:
+        raise HTTPException(status_code=401, detail="Invalid API key format")
 
     # Constant-time comparison to avoid leaking the configured token via
     # response-time differences on a per-byte mismatch (CWE-208).

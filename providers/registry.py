@@ -433,6 +433,10 @@ class ProviderRegistry:
             self._providers.clear()
             self._model_ids_by_provider.clear()
             self._model_infos_by_provider.clear()
+            from providers.rate_limit import GlobalRateLimiter
+
+            # Ensure all scoped instances are cleaned up to prevent memory leaks
+            GlobalRateLimiter.cleanup_scoped_instances()
         if len(errors) == 1:
             raise errors[0]
         if len(errors) > 1:

@@ -1,5 +1,7 @@
 """FastAPI route handlers."""
 
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from loguru import logger
 
@@ -169,7 +171,11 @@ async def create_message(
     _auth=Depends(require_api_key),
 ):
     """Create a message (always streaming)."""
-    return service.create_message(request_data)
+    try:
+        return service.create_message(request_data)
+    except Exception as e:
+        logger.error("Error in create_message: exc_type={}", type(e).__name__)
+        raise
 
 
 @router.api_route("/v1/messages", methods=["HEAD", "OPTIONS"])
@@ -185,7 +191,11 @@ async def count_tokens(
     _auth=Depends(require_api_key),
 ):
     """Count tokens for a request."""
-    return service.count_tokens(request_data)
+    try:
+        return service.count_tokens(request_data)
+    except Exception as e:
+        logger.error("Error in count_tokens: exc_type={}", type(e).__name__)
+        raise
 
 
 @router.api_route("/v1/messages/count_tokens", methods=["HEAD", "OPTIONS"])
@@ -244,11 +254,19 @@ async def stop_cli(request: Request, _auth=Depends(require_api_key)):
         # Fallback if messaging not initialized
         cli_manager = getattr(request.app.state, "cli_manager", None)
         if cli_manager:
-            await cli_manager.stop_all()
-            logger.info("STOP_CLI: source=cli_manager cancelled_count=N/A")
-            return {"status": "stopped", "source": "cli_manager"}
+            try:
+                await asyncio.wait_for(cli_manager.stop_all(), timeout=5.0)
+                logger.info("STOP_CLI: source=cli_manager cancelled_count=N/A")
+                return {"status": "stopped", "source": "cli_manager"}
+            except asyncio.TimeoutError:
+                logger.warning("STOP_CLI: source=cli_manager timed out")
+                return {"status": "timeout", "source": "cli_manager"}
         raise HTTPException(status_code=503, detail="Messaging system not initialized")
 
-    count = await handler.stop_all_tasks()
-    logger.info("STOP_CLI: source=handler cancelled_count={}", count)
-    return {"status": "stopped", "cancelled_count": count}
+    try:
+        count = await asyncio.wait_for(handler.stop_all_tasks(), timeout=5.0)
+        logger.info("STOP_CLI: source=handler cancelled_count={}", count)
+        return {"status": "stopped", "cancelled_count": count}
+    except asyncio.TimeoutError:
+        logger.warning("STOP_CLI: source=handler timed out")
+        return {"status": "timeout", "cancelled_count": None}

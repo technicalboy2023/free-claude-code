@@ -122,6 +122,11 @@ class GlobalRateLimiter:
         cls._instance = None
         cls._scoped_instances = {}
 
+    @classmethod
+    def cleanup_scoped_instances(cls) -> None:
+        """Clean up all scoped instances to prevent memory leaks."""
+        cls._scoped_instances.clear()
+
     async def wait_if_blocked(self) -> bool:
         """
         Wait if currently rate limited or throttle to meet quota.
@@ -201,6 +206,7 @@ class GlobalRateLimiter:
         base_delay: float = 2.0,
         max_delay: float = 60.0,
         jitter: float = 1.0,
+        timeout: float | None = None,
         **kwargs: Any,
     ) -> Any:
         """Execute an async callable with rate limiting and retry on 429.
@@ -214,6 +220,7 @@ class GlobalRateLimiter:
             base_delay: Base delay in seconds for exponential backoff.
             max_delay: Maximum delay cap in seconds.
             jitter: Maximum random jitter in seconds added to each delay.
+            timeout: Optional timeout for the function execution.
 
         Returns:
             The result of the callable.
@@ -227,7 +234,16 @@ class GlobalRateLimiter:
             await self.wait_if_blocked()
 
             try:
+                if timeout is not None:
+                    return await asyncio.wait_for(fn(*args, **kwargs), timeout=timeout)
                 return await fn(*args, **kwargs)
+            except asyncio.TimeoutError as e:
+                last_exc = e
+                logger.warning(
+                    f"Request timed out after {timeout}s, attempt {attempt + 1}/{max_retries + 1}"
+                )
+                if attempt >= max_retries:
+                    break
             except openai.RateLimitError as e:
                 last_exc = e
                 if attempt >= max_retries:

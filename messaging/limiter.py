@@ -65,6 +65,7 @@ class MessagingRateLimiter:
         self._condition = asyncio.Condition()
         self._shutdown = asyncio.Event()
         self._worker_task: asyncio.Task | None = None
+        self._pause_lock = asyncio.Lock()
 
         self._initialized = True
         self._paused_until = 0
@@ -96,16 +97,17 @@ class MessagingRateLimiter:
                         break
 
                     dedup_key = self._queue_list.popleft()
-                    func, futures = self._queue_map.pop(dedup_key)
+                    func, futures = self._queue_map.pop(dedup_key, (None, []))
 
                 # Check for manual pause (FloodWait)
-                now = asyncio.get_event_loop().time()
-                if self._paused_until > now:
-                    wait_time = self._paused_until - now
-                    logger.warning(
-                        f"Limiter worker paused, waiting {wait_time:.1f}s more..."
-                    )
-                    await asyncio.sleep(wait_time)
+                async with self._pause_lock:
+                    now = asyncio.get_event_loop().time()
+                    if self._paused_until > now:
+                        wait_time = self._paused_until - now
+                        logger.warning(
+                            f"Limiter worker paused, waiting {wait_time:.1f}s more..."
+                        )
+                        await asyncio.sleep(wait_time)
 
                 # Wait for rate limit capacity
                 async with self.limiter:
@@ -142,9 +144,10 @@ class MessagingRateLimiter:
                                 if isinstance(seconds, (int, float, str))
                                 else 30.0
                             )
-                            self._paused_until = (
-                                asyncio.get_event_loop().time() + wait_secs
-                            )
+                            async with self._pause_lock:
+                                self._paused_until = (
+                                    asyncio.get_event_loop().time() + wait_secs
+                                )
                         else:
                             d = get_settings().log_messaging_error_details
                             logger.error(

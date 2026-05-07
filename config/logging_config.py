@@ -94,7 +94,12 @@ def configure_logging(
     logger.remove()
 
     # Truncate log file on fresh start for clean debugging
-    Path(log_file).write_text("")
+    try:
+        log_path = Path(log_file)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text("")
+    except (OSError, IOError) as e:
+        print(f"Warning: Failed to initialize log file {log_file}: {e}")
 
     # Add file sink: JSON lines, DEBUG level, context vars at top level
     logger.add(
@@ -104,6 +109,9 @@ def configure_logging(
         encoding="utf-8",
         mode="a",
         rotation="50 MB",
+        retention="10 days",
+        compression="zip",
+        enqueue=True,
     )
 
     # Intercept stdlib logging: route all root logger output to loguru

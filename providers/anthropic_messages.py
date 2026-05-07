@@ -234,15 +234,19 @@ class AnthropicMessagesTransport(BaseProvider):
     async def _iter_sse_events(self, response: httpx.Response) -> AsyncIterator[str]:
         """Group line-delimited SSE responses into full SSE events."""
         event_lines: list[str] = []
-        async for line in response.aiter_lines():
-            if line:
-                event_lines.append(line)
-                continue
+        try:
+            async for line in response.aiter_lines():
+                if line:
+                    event_lines.append(line)
+                    continue
+                if event_lines:
+                    yield "\n".join(event_lines) + "\n\n"
+                    event_lines.clear()
             if event_lines:
                 yield "\n".join(event_lines) + "\n\n"
-                event_lines.clear()
-        if event_lines:
-            yield "\n".join(event_lines) + "\n\n"
+        finally:
+            # Always clear the buffer to prevent memory leaks
+            event_lines.clear()
 
     def _new_stream_state(self, request: Any, *, thinking_enabled: bool) -> Any:
         """Return per-stream provider state for event transformation."""
@@ -382,54 +386,53 @@ class AnthropicMessagesTransport(BaseProvider):
                         finally:
                             if not send_response.is_closed:
                                 await send_response.aclose()
+                        # Don't raise here - let the stream handle the error conversion
+                        return send_response
                     return send_response
 
                 response = await self._global_rate_limiter.execute_with_retry(
                     _validated_stream_send
                 )
 
-                async for chunk in self._iter_stream_chunks(
-                    response,
-                    state=state,
-                    thinking_enabled=thinking_enabled,
-                ):
-                    sent_any_event = True
-                    emitted_tracker.feed(chunk)
-                    yield chunk
-
-            except Exception as error:
-                if not isinstance(error, httpx.HTTPStatusError):
-                    self._log_stream_transport_error(tag, req_tag, error)
-                error_message = self._get_error_message(error, request_id)
-
-                if response is not None and not response.is_closed:
-                    await response.aclose()
-
-                logger.info(
-                    "{}_STREAM: Emitting native SSE error event for {}{}",
-                    tag,
-                    type(error).__name__,
-                    req_tag,
-                )
-                if sent_any_event:
-                    for event in emitted_tracker.iter_close_unclosed_blocks():
-                        yield event
-                    for event in emitted_tracker.iter_midstream_error_tail(
-                        error_message,
-                        request=request,
-                        input_tokens=input_tokens,
-                        log_raw_sse_events=self._config.log_raw_sse_events,
+                try:
+                    async for chunk in self._iter_stream_chunks(
+                        response,
+                        state=state,
+                        thinking_enabled=thinking_enabled,
                     ):
-                        yield event
-                else:
-                    for event in self._emit_error_events(
-                        request=request,
-                        input_tokens=input_tokens,
-                        error_message=error_message,
-                        sent_any_event=False,
-                    ):
-                        yield event
-                return
+                        sent_any_event = True
+                        emitted_tracker.feed(chunk)
+                        yield chunk
+                except Exception as stream_error:
+                    if not isinstance(stream_error, httpx.HTTPStatusError):
+                        self._log_stream_transport_error(tag, req_tag, stream_error)
+                    error_message = self._get_error_message(stream_error, request_id)
+
+                    logger.info(
+                        "{}_STREAM: Emitting native SSE error event for {}{}",
+                        tag,
+                        type(stream_error).__name__,
+                        req_tag,
+                    )
+                    if sent_any_event:
+                        for event in emitted_tracker.iter_close_unclosed_blocks():
+                            yield event
+                        for event in emitted_tracker.iter_midstream_error_tail(
+                            error_message,
+                            request=request,
+                            input_tokens=input_tokens,
+                            log_raw_sse_events=self._config.log_raw_sse_events,
+                        ):
+                            yield event
+                    else:
+                        for event in self._emit_error_events(
+                            request=request,
+                            input_tokens=input_tokens,
+                            error_message=error_message,
+                            sent_any_event=False,
+                        ):
+                            yield event
+                    raise
             finally:
                 if response is not None and not response.is_closed:
                     await response.aclose()

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from messaging.platforms.base import MessagingPlatform
     from messaging.session import SessionStore
 
-_SHUTDOWN_TIMEOUT_S = 5.0
+_SHUTDOWN_TIMEOUT_S = 10.0
 
 
 async def best_effort(

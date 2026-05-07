@@ -374,6 +374,67 @@ class Settings(BaseSettings):
             raise ValueError(f"Invalid provider: '{provider}'. Supported: {supported}")
         return v
 
+    @field_validator("provider_rate_limit")
+    @classmethod
+    def validate_provider_rate_limit(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("provider_rate_limit must be > 0")
+        if v > 10000:
+            raise ValueError("provider_rate_limit must be <= 10000")
+        return v
+
+    @field_validator("provider_rate_window")
+    @classmethod
+    def validate_provider_rate_window(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("provider_rate_window must be > 0")
+        if v > 3600:
+            raise ValueError("provider_rate_window must be <= 3600 (1 hour)")
+        return v
+
+    @field_validator("provider_max_concurrency")
+    @classmethod
+    def validate_provider_max_concurrency(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("provider_max_concurrency must be > 0")
+        if v > 1000:
+            raise ValueError("provider_max_concurrency must be <= 1000")
+        return v
+
+    @field_validator("http_read_timeout")
+    @classmethod
+    def validate_http_read_timeout(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("http_read_timeout must be > 0")
+        if v > 3600:
+            raise ValueError("http_read_timeout must be <= 3600 (1 hour)")
+        return v
+
+    @field_validator("http_write_timeout")
+    @classmethod
+    def validate_http_write_timeout(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("http_write_timeout must be > 0")
+        if v > 3600:
+            raise ValueError("http_write_timeout must be <= 3600 (1 hour)")
+        return v
+
+    @field_validator("http_connect_timeout")
+    @classmethod
+    def validate_http_connect_timeout(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("http_connect_timeout must be > 0")
+        if v > 300:
+            raise ValueError("http_connect_timeout must be <= 300 (5 minutes)")
+        return v
+
+    @field_validator("port")
+    @classmethod
+    def validate_port(cls, v: int) -> int:
+        if v < 1 or v > 65535:
+            raise ValueError("port must be between 1 and 65535")
+        return v
+
     @model_validator(mode="after")
     def check_nvidia_nim_api_key(self) -> Settings:
         if (

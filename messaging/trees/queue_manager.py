@@ -539,8 +539,8 @@ class TreeQueueManager:
             return []
 
         cancelled_nodes = []
+        cancelled_task = None
 
-        cleanup_count = 0
         async with tree.with_lock():
             if tree.cancel_current_task():
                 current_id = tree.current_node_id
@@ -552,6 +552,7 @@ class TreeQueueManager:
                     ):
                         tree.set_node_error_sync(node, "Cancelled by user")
                         cancelled_nodes.append(node)
+                        cancelled_task = tree._current_task
 
             queue_nodes = tree.drain_queue_and_mark_cancelled()
             cancelled_nodes.extend(queue_nodes)
@@ -562,17 +563,21 @@ class TreeQueueManager:
                     node.state in (MessageState.PENDING, MessageState.IN_PROGRESS)
                     and node.node_id not in cancelled_ids
                 ):
-                    tree.set_node_error_sync(node, "Stale task cleaned up")
-                    cleanup_count += 1
+                    tree.set_node_error_sync(node, "Cancelled by user")
+                    cancelled_nodes.append(node)
 
             tree.reset_processing_state()
+
+        if cancelled_task and not cancelled_task.done():
+            try:
+                await asyncio.wait_for(cancelled_task, timeout=1.0)
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                pass
 
         if cancelled_nodes:
             logger.info(
                 f"Cancelled {len(cancelled_nodes)} active nodes in tree {root_id}"
             )
-        if cleanup_count:
-            logger.info(f"Cleaned up {cleanup_count} stale nodes in tree {root_id}")
 
         return cancelled_nodes
 
