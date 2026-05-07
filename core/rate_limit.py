@@ -48,11 +48,11 @@ class StrictSlidingWindowLimiter:
                 wait_time = max(0.0, (oldest + self._rate_window) - now)
 
             if wait_time > 0:
-                try:
+                try:  # noqa: SIM105
                     await asyncio.wait_for(
                         asyncio.sleep(wait_time), timeout=wait_time + 1.0
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     pass
             else:
                 await asyncio.sleep(0)

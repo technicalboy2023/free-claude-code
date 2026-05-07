@@ -98,7 +98,7 @@ def configure_logging(
         log_path = Path(log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_path.write_text("")
-    except (OSError, IOError) as e:
+    except OSError as e:
         print(f"Warning: Failed to initialize log file {log_file}: {e}")
 
     # Add file sink: JSON lines, DEBUG level, context vars at top level

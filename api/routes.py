@@ -258,7 +258,7 @@ async def stop_cli(request: Request, _auth=Depends(require_api_key)):
                 await asyncio.wait_for(cli_manager.stop_all(), timeout=5.0)
                 logger.info("STOP_CLI: source=cli_manager cancelled_count=N/A")
                 return {"status": "stopped", "source": "cli_manager"}
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning("STOP_CLI: source=cli_manager timed out")
                 return {"status": "timeout", "source": "cli_manager"}
         raise HTTPException(status_code=503, detail="Messaging system not initialized")
@@ -267,6 +267,6 @@ async def stop_cli(request: Request, _auth=Depends(require_api_key)):
         count = await asyncio.wait_for(handler.stop_all_tasks(), timeout=5.0)
         logger.info("STOP_CLI: source=handler cancelled_count={}", count)
         return {"status": "stopped", "cancelled_count": count}
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning("STOP_CLI: source=handler timed out")
         return {"status": "timeout", "cancelled_count": None}

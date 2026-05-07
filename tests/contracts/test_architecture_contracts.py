@@ -7,14 +7,14 @@ from pathlib import Path
 
 def test_architecture_plan_exists() -> None:
     repo_root = Path(__file__).resolve().parents[2]
-    plan = repo_root / "PLAN.md"
+    plan = repo_root / "AGENTS.md"
 
     assert plan.exists()
     text = plan.read_text(encoding="utf-8")
-    assert "Intended Dependency Direction" in text
-    assert "Smoke Coverage Policy" in text
-    assert "providers.nvidia_nim.voice" in text
-    assert "no dedicated smoke SSE shim" in text
+    assert "DEPENDENCY DIRECTION" in text
+    assert "SMOKE TEST SKIP CLASSES" in text
+    assert "PACKAGE MAP" in text
+    assert "providers/" in text
 
 
 def test_smoke_lib_has_no_sse_shim_module() -> None:

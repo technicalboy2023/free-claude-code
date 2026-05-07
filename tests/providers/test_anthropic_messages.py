@@ -224,9 +224,10 @@ async def test_stream_maps_non_200_to_error_event_and_closes_response(
             return_value=response,
         ),
     ):
-        events = [
-            event async for event in provider.stream_response(req, request_id="REQ_123")
-        ]
+        events = []
+        with pytest.raises(httpx.HTTPStatusError):
+            async for event in provider.stream_response(req, request_id="REQ_123"):
+                events.append(event)  # noqa: PERF401
 
     assert response.is_closed
     assert_canonical_stream_error_envelope(
@@ -282,7 +283,10 @@ async def test_midstream_error_closes_open_block_and_uses_fresh_content_index(
             return_value=response,
         ),
     ):
-        events = [e async for e in provider.stream_response(req)]
+        events = []
+        with pytest.raises(RuntimeError, match="mid-stream failure"):
+            async for e in provider.stream_response(req):
+                events.append(e)  # noqa: PERF401
 
     assert_canonical_stream_error_envelope(
         events, user_message_substr="mid-stream failure"

@@ -237,7 +237,7 @@ class GlobalRateLimiter:
                 if timeout is not None:
                     return await asyncio.wait_for(fn(*args, **kwargs), timeout=timeout)
                 return await fn(*args, **kwargs)
-            except asyncio.TimeoutError as e:
+            except TimeoutError as e:
                 last_exc = e
                 logger.warning(
                     f"Request timed out after {timeout}s, attempt {attempt + 1}/{max_retries + 1}"

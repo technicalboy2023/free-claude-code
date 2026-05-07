@@ -141,11 +141,11 @@ def test_architecture_doc_names_enforced_boundaries() -> None:
     stream_contracts = repo_root / "core" / "anthropic" / "stream_contracts.py"
     assert stream_contracts.is_file()
 
-    text = (repo_root / "PLAN.md").read_text(encoding="utf-8")
+    text = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
 
     assert "core/anthropic/" in text
     assert "api/runtime.py" in text
-    assert "import-boundary" in text or "Provider adapters may depend" in text
+    assert "Hard rules (enforced by" in text
 
 
 def _imports_matching(
@@ -250,7 +250,7 @@ def _text_occurrences(repo_root: Path, needle: str) -> list[str]:
         repo_root / "tests",
         repo_root / ".env.example",
         repo_root / "AGENTS.md",
-        repo_root / "PLAN.md",
+        repo_root / "AGENTS.md",
         repo_root / "README.md",
         repo_root / "pyproject.toml",
     ]

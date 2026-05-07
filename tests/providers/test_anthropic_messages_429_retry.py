@@ -114,7 +114,10 @@ async def test_non_429_http_error_not_retried(provider_config):
                     return_value=err,
                 ) as mock_send,
             ):
-                events = [e async for e in provider.stream_response(req)]
+                events = []
+                with pytest.raises(httpx.HTTPStatusError):
+                    async for e in provider.stream_response(req):
+                        events.append(e)  # noqa: PERF401
 
             mock_send.assert_awaited_once()
             assert err.is_closed

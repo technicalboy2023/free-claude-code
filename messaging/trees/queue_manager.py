@@ -569,9 +569,9 @@ class TreeQueueManager:
             tree.reset_processing_state()
 
         if cancelled_task and not cancelled_task.done():
-            try:
+            try:  # noqa: SIM105
                 await asyncio.wait_for(cancelled_task, timeout=1.0)
-            except asyncio.TimeoutError, asyncio.CancelledError:
+            except TimeoutError, asyncio.CancelledError:
                 pass
 
         if cancelled_nodes:

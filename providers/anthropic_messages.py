@@ -390,11 +390,11 @@ class AnthropicMessagesTransport(BaseProvider):
                         return send_response
                     return send_response
 
-                response = await self._global_rate_limiter.execute_with_retry(
-                    _validated_stream_send
-                )
-
                 try:
+                    response = await self._global_rate_limiter.execute_with_retry(
+                        _validated_stream_send
+                    )
+
                     async for chunk in self._iter_stream_chunks(
                         response,
                         state=state,

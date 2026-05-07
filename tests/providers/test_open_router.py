@@ -684,6 +684,7 @@ async def test_stream_response_closes_overlapping_thinking_before_text(
 async def test_stream_response_error_path(open_router_provider):
     req = MockRequest()
 
+    events = []
     with (
         patch.object(open_router_provider._client, "build_request"),
         patch.object(
@@ -692,8 +693,10 @@ async def test_stream_response_error_path(open_router_provider):
             new_callable=AsyncMock,
             side_effect=RuntimeError("API failed"),
         ),
+        pytest.raises(RuntimeError, match="API failed"),
     ):
-        events = [e async for e in open_router_provider.stream_response(req)]
+        async for e in open_router_provider.stream_response(req):
+            events.append(e)  # noqa: PERF401
 
     event_text = "".join(events)
     assert "message_start" in event_text

@@ -4,6 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 
 from config.constants import NATIVE_MESSAGES_ERROR_BODY_LOG_CAP_BYTES
@@ -68,7 +69,10 @@ async def test_native_non_200_logs_exclude_body_text_by_default(
         ),
         caplog.at_level(logging.ERROR),
     ):
-        _ = [e async for e in provider.stream_response(req)]
+        events = []
+        with pytest.raises(httpx.HTTPStatusError):
+            async for e in provider.stream_response(req):
+                events.append(e)  # noqa: PERF401
 
     messages = " | ".join(r.getMessage() for r in caplog.records)
     assert "SECRET_UPSTREAM_BODY" not in messages
@@ -93,7 +97,10 @@ async def test_native_non_200_logs_body_when_verbose(caplog, provider_config):
         ),
         caplog.at_level(logging.ERROR),
     ):
-        _ = [e async for e in provider.stream_response(req)]
+        events = []
+        with pytest.raises(httpx.HTTPStatusError):
+            async for e in provider.stream_response(req):
+                events.append(e)  # noqa: PERF401
 
     messages = " | ".join(r.getMessage() for r in caplog.records)
     assert "SECRET_UPSTREAM_BODY" in messages
@@ -121,7 +128,10 @@ async def test_native_non_200_verbose_logs_only_capped_error_body(
         ),
         caplog.at_level(logging.ERROR),
     ):
-        _ = [e async for e in provider.stream_response(req)]
+        events = []
+        with pytest.raises(httpx.HTTPStatusError):
+            async for e in provider.stream_response(req):
+                events.append(e)  # noqa: PERF401
 
     messages = " | ".join(r.getMessage() for r in caplog.records)
     assert "SECRET_TAIL_NOT_LOGGED" not in messages
@@ -148,7 +158,10 @@ async def test_native_non_200_default_does_not_read_oversized_body(
         ),
         caplog.at_level(logging.ERROR),
     ):
-        _ = [e async for e in provider.stream_response(req)]
+        events = []
+        with pytest.raises(httpx.HTTPStatusError):
+            async for e in provider.stream_response(req):
+                events.append(e)  # noqa: PERF401
 
     messages = " | ".join(r.getMessage() for r in caplog.records)
     assert "LEAK_MARKER" not in messages
@@ -186,7 +199,10 @@ async def test_native_stream_failure_logs_exclude_exception_str_by_default(
         patch.object(AnthropicMessagesTransport, "_iter_sse_events", boom),
         caplog.at_level(logging.ERROR),
     ):
-        _ = [e async for e in provider.stream_response(req)]
+        events = []
+        with pytest.raises(RuntimeError):
+            async for e in provider.stream_response(req):
+                events.append(e)  # noqa: PERF401
 
     messages = " | ".join(r.getMessage() for r in caplog.records)
     assert "SECRET_DETAIL" not in messages
