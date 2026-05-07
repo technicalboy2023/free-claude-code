@@ -38,6 +38,14 @@ def _cleanup_rate_limiters():
     GlobalRateLimiter.cleanup_scoped_instances()
 
 
+@pytest.fixture(autouse=True)
+def reset_settings_cache():
+    from config.settings import clear_settings_cache
+
+    yield
+    clear_settings_cache()
+
+
 @pytest.fixture
 def provider_config():
     from providers.base import ProviderConfig

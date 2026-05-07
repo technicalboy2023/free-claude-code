@@ -112,9 +112,9 @@ def test_cancel_current_task(tree_processor, sample_tree):
     mock_task.done.return_value = False
     sample_tree._current_task = mock_task
 
-    cancelled = tree_processor.cancel_current(sample_tree)
+    cancelled_task = tree_processor.cancel_current(sample_tree)
 
-    assert cancelled is True
+    assert cancelled_task is mock_task
     mock_task.cancel.assert_called_once()
 
 
@@ -123,9 +123,9 @@ def test_cancel_current_task_already_done(tree_processor, sample_tree):
     mock_task.done.return_value = True
     sample_tree._current_task = mock_task
 
-    cancelled = tree_processor.cancel_current(sample_tree)
+    cancelled_task = tree_processor.cancel_current(sample_tree)
 
-    assert cancelled is False
+    assert cancelled_task is None
     mock_task.cancel.assert_not_called()
 
 

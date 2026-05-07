@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import shutil
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -238,6 +239,15 @@ class AppRuntime:
             log_messaging_error_details=self.settings.log_messaging_error_details,
         )
 
+        cli_bin = self.settings.claude_cli_bin
+        if not shutil.which(cli_bin):
+            logger.warning(
+                "Claude CLI binary not found in PATH: bin={}. "
+                "Messages will fail until it is installed. "
+                "Install with: npm install -g @anthropic-ai/claude-code",
+                cli_bin,
+            )
+
         session_store = SessionStore(
             storage_path=os.path.join(data_path, "sessions.json"),
             message_log_cap=self.settings.max_message_log_entries_per_chat,
@@ -254,10 +264,9 @@ class AppRuntime:
             log_raw_cli_diagnostics=self.settings.log_raw_cli_diagnostics,
             log_messaging_error_details=self.settings.log_messaging_error_details,
         )
-        self._restore_tree_state(session_store)
-
         platform.on_message(self.message_handler.handle_message)
         await platform.start()
+        self._restore_tree_state(session_store)
         logger.info(f"{platform.name} platform started with message handler")
 
     def _restore_tree_state(self, session_store: SessionStore) -> None:

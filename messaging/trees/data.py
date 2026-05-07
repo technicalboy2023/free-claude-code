@@ -347,12 +347,13 @@ class MessageTree:
         """Add node to queue. Caller must hold lock (e.g. via with_lock)."""
         self._queue.put_nowait(node_id)
 
-    def cancel_current_task(self) -> bool:
-        """Cancel the currently running task. Returns True if a task was cancelled."""
-        if self._current_task and not self._current_task.done():
-            self._current_task.cancel()
-            return True
-        return False
+    def cancel_current_task(self) -> asyncio.Task[None] | None:
+        """Cancel the currently running task and return it (or None if nothing to cancel)."""
+        task = self._current_task
+        if task is not None and not task.done():
+            task.cancel()
+            return task
+        return None
 
     def set_node_error_sync(self, node: MessageNode, error_message: str) -> None:
         """Synchronously mark a node as ERROR. Caller must ensure no concurrent access."""

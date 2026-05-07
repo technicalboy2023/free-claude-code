@@ -329,8 +329,8 @@ class TreeQueueProcessor:
                     )
                 return False
 
-    def cancel_current(self, tree: MessageTree) -> bool:
-        """Cancel the currently running task in a tree."""
+    def cancel_current(self, tree: MessageTree) -> asyncio.Task[None] | None:
+        """Cancel the currently running task in a tree. Returns the cancelled task."""
         return tree.cancel_current_task()
 
 
@@ -542,7 +542,8 @@ class TreeQueueManager:
         cancelled_task = None
 
         async with tree.with_lock():
-            if tree.cancel_current_task():
+            cancelled_task = tree.cancel_current_task()
+            if cancelled_task is not None:
                 current_id = tree.current_node_id
                 if current_id:
                     node = tree.get_node(current_id)
@@ -552,7 +553,6 @@ class TreeQueueManager:
                     ):
                         tree.set_node_error_sync(node, "Cancelled by user")
                         cancelled_nodes.append(node)
-                        cancelled_task = tree._current_task
 
             queue_nodes = tree.drain_queue_and_mark_cancelled()
             cancelled_nodes.extend(queue_nodes)

@@ -120,7 +120,13 @@ def require_api_key(
 
     # Strip anything after the first colon to handle tokens with appended model names
     if token and ":" in token:
+        original = token
         token = token.split(":", 1)[0]
+        logger.debug(
+            "Auth token colon-stripped: original_len={} stripped_len={}",
+            len(original),
+            len(token),
+        )
 
     if not token:
         raise HTTPException(status_code=401, detail="Invalid API key format")

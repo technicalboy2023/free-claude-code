@@ -38,5 +38,8 @@ COPY --chown=appuser:appuser . .
 # Expose the default port (Render will override this dynamically with $PORT)
 EXPOSE 8082
 
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8082}/health || exit 1
+
 # Start the application using uv run to ensure the right environment is used
 CMD ["uv", "run", "python", "server.py"]
