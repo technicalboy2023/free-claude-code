@@ -130,7 +130,7 @@ class Settings(BaseSettings):
     # ==================== Model ====================
     # All Claude model requests are mapped to this single model (fallback)
     # Format: provider_type/model/name
-    model: str = "nvidia_nim/z-ai/glm4.7"
+    model: str = "nvidia_nim/meta/llama-3.1-8b-instruct"
 
     # Per-model overrides (optional, falls back to MODEL)
     # Each can use a different provider

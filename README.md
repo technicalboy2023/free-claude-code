@@ -74,7 +74,7 @@ Edit `.env` and set at least one provider key. For the default NVIDIA NIM path:
 
 ```dotenv
 NVIDIA_NIM_API_KEY="nvapi-your-key"
-MODEL="nvidia_nim/z-ai/glm4.7"
+MODEL="nvidia_nim/meta/llama-3.1-8b-instruct"
 ANTHROPIC_AUTH_TOKEN="freecc"
 ```
 
@@ -138,12 +138,12 @@ Get a key at [build.nvidia.com/settings/api-keys](https://build.nvidia.com/setti
 
 ```dotenv
 NVIDIA_NIM_API_KEY="nvapi-your-key"
-MODEL="nvidia_nim/z-ai/glm4.7"
+MODEL="nvidia_nim/meta/llama-3.1-8b-instruct"
 ```
 
 Popular models:
 
-- `nvidia_nim/z-ai/glm4.7`
+- `nvidia_nim/meta/llama-3.1-8b-instruct`
 - `nvidia_nim/z-ai/glm5`
 - `nvidia_nim/moonshotai/kimi-k2.5`
 - `nvidia_nim/minimaxai/minimax-m2.5`
@@ -206,7 +206,7 @@ OPENROUTER_API_KEY="sk-or-your-key"
 MODEL_OPUS="nvidia_nim/moonshotai/kimi-k2.5"
 MODEL_SONNET="open_router/deepseek/deepseek-r1-0528:free"
 MODEL_HAIKU="deepseek/deepseek-chat"
-MODEL="nvidia_nim/z-ai/glm4.7"
+MODEL="nvidia_nim/meta/llama-3.1-8b-instruct"
 ```
 
 </details>
@@ -371,7 +371,7 @@ ANTHROPIC_AUTH_TOKEN="your-token" ANTHROPIC_BASE_URL="https://your-service.onren
 ### Model Routing
 
 ```dotenv
-MODEL="nvidia_nim/z-ai/glm4.7"
+MODEL="nvidia_nim/meta/llama-3.1-8b-instruct"
 MODEL_OPUS=
 MODEL_SONNET=
 MODEL_HAIKU=
