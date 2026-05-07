@@ -27,7 +27,7 @@ class MessagingRateLimiter:
     """
 
     _instance: MessagingRateLimiter | None = None
-    _lock = asyncio.Lock()
+    _lock: asyncio.Lock | None = None
 
     def __new__(cls, *args, **kwargs):
         return super().__new__(cls)
@@ -44,6 +44,8 @@ class MessagingRateLimiter:
         ``rate_limit`` and ``rate_window`` apply only when the singleton is first
         created. Call :meth:`shutdown_instance` before changing parameters.
         """
+        if cls._lock is None:
+            cls._lock = asyncio.Lock()
         async with cls._lock:
             if cls._instance is None:
                 cls._instance = cls(rate_limit=rate_limit, rate_window=rate_window)
@@ -98,6 +100,9 @@ class MessagingRateLimiter:
 
                     dedup_key = self._queue_list.popleft()
                     func, futures = self._queue_map.pop(dedup_key, (None, []))
+
+                if func is None:
+                    continue
 
                 # Check for manual pause (FloodWait)
                 async with self._pause_lock:
@@ -206,13 +211,13 @@ class MessagingRateLimiter:
     @classmethod
     async def shutdown_instance(cls, timeout: float = 2.0) -> None:
         """Shutdown and clear the singleton instance (safe to call multiple times)."""
-        inst = cls._instance
-        if not inst:
-            return
-        try:
-            await inst.shutdown(timeout=timeout)
-        finally:
+        if cls._lock is None:
+            cls._lock = asyncio.Lock()
+        async with cls._lock:
+            inst = cls._instance
             cls._instance = None
+        if inst is not None:
+            await inst.shutdown(timeout=timeout)
 
     async def _enqueue_internal(self, func, future, dedup_key, front=False):
         await self._enqueue_internal_multi(func, [future], dedup_key, front)

@@ -571,7 +571,7 @@ class TreeQueueManager:
         if cancelled_task and not cancelled_task.done():
             try:
                 await asyncio.wait_for(cancelled_task, timeout=1.0)
-            except (asyncio.TimeoutError, asyncio.CancelledError):
+            except asyncio.TimeoutError, asyncio.CancelledError:
                 pass
 
         if cancelled_nodes:

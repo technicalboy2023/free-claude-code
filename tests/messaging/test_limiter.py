@@ -35,6 +35,16 @@ class TestMessagingRateLimiter:
         assert limiter1.limiter._rate_window == 0.5
 
     @pytest.mark.asyncio
+    async def test_get_instance_creates_fresh_lock_per_event_loop(self):
+        """Test that get_instance initializes the lock if it's None."""
+        MessagingRateLimiter._instance = None
+        MessagingRateLimiter._lock = None
+        inst = await MessagingRateLimiter.get_instance(rate_limit=1, rate_window=1.0)
+        assert inst is not None
+        assert MessagingRateLimiter._lock is not None
+        await MessagingRateLimiter.shutdown_instance()
+
+    @pytest.mark.asyncio
     async def test_compaction(self):
         """
         Verify multiple rapid requests with same dedup_key are compacted.
