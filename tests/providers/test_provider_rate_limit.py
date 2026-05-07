@@ -358,3 +358,18 @@ class TestProviderRateLimiter:
 
         assert nim.is_blocked() is True
         assert openrouter.is_blocked() is False
+
+    @pytest.mark.asyncio
+    async def test_cleanup_scoped_instances(self):
+        """cleanup_scoped_instances should clear all cached scoped limiters."""
+        GlobalRateLimiter.reset_instance()
+        GlobalRateLimiter.get_scoped_instance(
+            "provider1", rate_limit=10, rate_window=60
+        )
+        GlobalRateLimiter.get_scoped_instance(
+            "provider2", rate_limit=10, rate_window=60
+        )
+
+        assert len(GlobalRateLimiter._scoped_instances) == 2
+        GlobalRateLimiter.cleanup_scoped_instances()
+        assert len(GlobalRateLimiter._scoped_instances) == 0

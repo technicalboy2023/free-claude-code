@@ -28,6 +28,16 @@ def _isolate_from_dotenv(monkeypatch):
     )
 
 
+@pytest.fixture(autouse=True)
+def _cleanup_rate_limiters():
+    """Ensure rate limiters are cleared between tests to prevent memory leaks."""
+    yield
+    from providers.rate_limit import GlobalRateLimiter
+
+    GlobalRateLimiter.reset_instance()
+    GlobalRateLimiter.cleanup_scoped_instances()
+
+
 @pytest.fixture
 def provider_config():
     from providers.base import ProviderConfig
