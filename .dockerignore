@@ -42,7 +42,6 @@ docker-compose*.yml
 .dockerignore
 
 # Documentation & CI
-README.md
 LICENSE
 PLAN.md
 AGENTS.md

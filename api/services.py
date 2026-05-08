@@ -45,10 +45,10 @@ def anthropic_sse_streaming_response(
     async def _with_heartbeat() -> AsyncIterator[str]:
         # Emit a comment event to keep reverse proxies alive
         ping_event = ":\n\n"
-        
+
         async def _next_item() -> str:
             return await body.__anext__()
-            
+
         task = asyncio.create_task(_next_item())
         while True:
             done, _ = await asyncio.wait([task], timeout=15.0)
