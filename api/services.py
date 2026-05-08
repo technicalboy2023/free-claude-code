@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import traceback
 import uuid
 from collections.abc import AsyncIterator, Callable
@@ -39,9 +40,31 @@ _OPENAI_CHAT_UPSTREAM_IDS = frozenset({"nvidia_nim"})
 def anthropic_sse_streaming_response(
     body: AsyncIterator[str],
 ) -> StreamingResponse:
-    """Return a :class:`StreamingResponse` for Anthropic-style SSE streams."""
+    """Return a :class:`StreamingResponse` for Anthropic-style SSE streams with heartbeat."""
+
+    async def _with_heartbeat() -> AsyncIterator[str]:
+        # Emit a comment event to keep reverse proxies alive
+        ping_event = ":\n\n"
+        
+        async def _next_item() -> str:
+            return await body.__anext__()
+            
+        task = asyncio.create_task(_next_item())
+        while True:
+            done, _ = await asyncio.wait([task], timeout=15.0)
+            if done:
+                try:
+                    yield task.result()
+                    task = asyncio.create_task(_next_item())
+                except StopAsyncIteration:
+                    break
+                except Exception:
+                    raise
+            else:
+                yield ping_event
+
     return StreamingResponse(
-        body,
+        _with_heartbeat(),
         media_type="text/event-stream",
         headers=ANTHROPIC_SSE_RESPONSE_HEADERS,
     )

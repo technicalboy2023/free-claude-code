@@ -377,18 +377,16 @@ class AnthropicMessagesTransport(BaseProvider):
                     send_response = await self._send_stream_request(
                         body, api_key=request_key
                     )
-                    if send_response.status_code == 429:
-                        await send_response.aclose()
-                        send_response.raise_for_status()
-                    if send_response.status_code != 200:
-                        try:
+                    try:
+                        if send_response.status_code == 429:
+                            send_response.raise_for_status()
+                        if send_response.status_code != 200:
                             await self._raise_for_status(send_response, req_tag=req_tag)
-                        finally:
-                            if not send_response.is_closed:
-                                await send_response.aclose()
-                        # Don't raise here - let the stream handle the error conversion
                         return send_response
-                    return send_response
+                    except Exception:
+                        if not send_response.is_closed:
+                            await send_response.aclose()
+                        raise
 
                 try:
                     response = await self._global_rate_limiter.execute_with_retry(

@@ -37,6 +37,7 @@ jobs:
           version: "0.10.4"
           enable-cache: true
           cache-python: true
+          python-version: "3.14"
 
       - name: Format check
         run: uv run ruff format --check

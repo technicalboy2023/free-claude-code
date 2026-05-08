@@ -11,7 +11,7 @@ This repo is an **Anthropic-compatible proxy** written in Python 3.14 + FastAPI.
 It accepts Claude API calls and forwards them to: **NVIDIA NIM · OpenRouter · DeepSeek · Ollama**  
 Optionally it runs a **Telegram / Discord bot** that drives the Claude CLI subprocess.
 
-Entry point: `server.py` → `api/app.py:create_asgi_app()` → uvicorn
+Entry point: `server.py` → `api/app.py:create_asgi_app()` → `api/runtime.py` (lifecycle) → uvicorn
 
 ---
 
@@ -101,45 +101,7 @@ api/  ──► messaging/
 
 ## KEY KNOWN BUGS (Fix Before Next Release)
 
-> These are tracked bugs from the last audit. Fix in priority order.
-
-### BUG-01 — `api_url` uses `0.0.0.0` (BREAKS messaging)
-**File:** `api/runtime.py:220`  
-When `host = "0.0.0.0"`, the CLI manager gets `api_url = "http://0.0.0.0:8082/v1"` which is not routable.
-```python
-# FIX:
-host_for_cli = "127.0.0.1" if self.settings.host in ("0.0.0.0", "::") else self.settings.host
-api_url = f"http://{host_for_cli}:{self.settings.port}/v1"
-```
-
-### BUG-02 — Class-level `asyncio.Lock` in `MessagingRateLimiter`
-**File:** `messaging/limiter.py:30`  
-`_lock = asyncio.Lock()` at class body level → bound to wrong event loop under pytest.
-Fix: Create lock lazily inside `get_instance()`.
-
-### BUG-03 — SSE stream double-close
-**File:** `providers/anthropic_messages.py` (error paths)  
-Response `.aclose()` called twice in error + finally paths. Use single `try/finally` with `closed` guard.
-
-### BUG-04 — Race in `MessagingRateLimiter` task compaction
-**File:** `messaging/limiter.py:219-233`  
-Futures orphaned when `enqueue` re-inserts same key between pop and execution.
-
-### BUG-05 — `GlobalRateLimiter` scoped instances memory leak
-**File:** `providers/rate_limit.py`  
-`_scoped_instances` class var never cleaned between test registry creations.
-
-### BUG-06 — `cancel_tree` captures stale task reference
-**File:** `messaging/trees/queue_manager.py:545-555`  
-`tree._current_task` read after `cancel_current_task()` may point to new task.
-
-### BUG-07 — `render.yaml` default model `z-ai/glm4.7` likely invalid
-**File:** `render.yaml:9`  
-Change to a known NIM catalog model (e.g. `nvidia_nim/meta/llama-3.1-8b-instruct`).
-
-### BUG-08 — OpenAI client key mutation race under concurrent requests
-**File:** `providers/openai_compat.py`  
-`stream_response` mutates `self._client.api_key` without holding `_key_lock`.
+> *All key bugs from the previous audit have been successfully resolved and verified via the test suite.*
 
 ---
 

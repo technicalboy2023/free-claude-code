@@ -42,9 +42,18 @@ docker-compose*.yml
 .dockerignore
 
 # Documentation & CI
-
+README.md
+LICENSE
 PLAN.md
 AGENTS.md
 CLAUDE.md
 render.yaml
 .github/
+
+# Assets & temp files (not needed at runtime)
+*.png
+*.skill
+*.zip
+*.txt
+_skill_extracted/
+smoke/

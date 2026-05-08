@@ -11,6 +11,8 @@ build/
 
 # Environment secrets
 .env
+.env.*
+!.env.example
 
 # IDE / Editor
 .claude/
@@ -19,11 +21,13 @@ build/
 .vscode/
 .idea/
 
-# Testing
+# Testing & Typing
 .pytest_cache/
 .coverage
 htmlcov/
 .smoke-results/
+.mypy_cache/
+.pyre/
 
 # Linting / Formatting
 .ruff_cache/
@@ -32,7 +36,7 @@ htmlcov/
 server.log
 debug-*.log
 *.log
-*.txt
+# *.txt (Commented out: Ignored txt can cause issues if you add documentation later. Instead, target specific logs)
 
 # Debug / Local test artifacts
 claude_req.json
@@ -42,6 +46,9 @@ test_moonshot.py
 
 # Runtime artifacts
 agent_workspace/
+_skill_extracted/
+*.skill
+*.zip
 
 # Docker (local)
 docker-compose.override.yml
