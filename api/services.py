@@ -45,23 +45,31 @@ def anthropic_sse_streaming_response(
     async def _with_heartbeat() -> AsyncIterator[str]:
         # Emit a comment event to keep reverse proxies alive
         ping_event = ":\n\n"
+        queue: asyncio.Queue[str | BaseException | None] = asyncio.Queue()
 
-        async def _next_item() -> str:
-            return await body.__anext__()
+        async def _producer() -> None:
+            try:
+                async for item in body:
+                    await queue.put(item)
+                await queue.put(None)
+            except Exception as e:
+                await queue.put(e)
 
-        task = asyncio.create_task(_next_item())
-        while True:
-            done, _ = await asyncio.wait([task], timeout=15.0)
-            if done:
+        producer_task = asyncio.create_task(_producer())
+
+        try:
+            while True:
                 try:
-                    yield task.result()
-                    task = asyncio.create_task(_next_item())
-                except StopAsyncIteration:
-                    break
-                except Exception:
-                    raise
-            else:
-                yield ping_event
+                    item = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    if item is None:
+                        break
+                    if isinstance(item, BaseException):
+                        raise item
+                    yield item
+                except TimeoutError:
+                    yield ping_event
+        finally:
+            producer_task.cancel()
 
     return StreamingResponse(
         _with_heartbeat(),
