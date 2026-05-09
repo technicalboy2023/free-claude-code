@@ -64,7 +64,15 @@ def anthropic_sse_streaming_response(
                     if item is None:
                         break
                     if isinstance(item, BaseException):
-                        raise item
+                        # The stream_response generator already emitted SSE error
+                        # events to the client before raising. Swallow the exception
+                        # here so it does not propagate to ASGI and produce a
+                        # noisy "Exception in ASGI application" traceback.
+                        logger.debug(
+                            "Stream ended with provider error (already sent to client via SSE): {}",
+                            type(item).__name__,
+                        )
+                        break
                     yield item
                 except TimeoutError:
                     yield ping_event

@@ -439,12 +439,7 @@ class AnthropicMessagesTransport(BaseProvider):
                             sent_any_event=False,
                         ):
                             yield event
-                    # NOTE: Do NOT re-raise here. The error has already been
-                    # communicated to the client via SSE error events above.
-                    # Re-raising would propagate through _with_heartbeat and
-                    # cause an unnecessary "Exception in ASGI application" crash
-                    # even though the response completed cleanly from the client's
-                    # perspective.
+                    raise
             finally:
                 if response is not None and not response.is_closed:
                     await response.aclose()
