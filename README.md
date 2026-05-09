@@ -14,7 +14,7 @@ Use Claude Code CLI, VS Code, JetBrains ACP, or chat bots through your own Anthr
 
 Free Claude Code routes Anthropic Messages API traffic from Claude Code to NVIDIA NIM, OpenRouter, DeepSeek, or Ollama Cloud — with **round-robin API key rotation** for rate-limit resilience. It keeps Claude Code's client-side protocol stable while letting you choose free or paid models.
 
-[Quick Start](#quick-start) · [Providers](#choose-a-provider) · [Key Rotation](#round-robin-key-rotation) · [Clients](#connect-claude-code) · [Deploy](#deploy-to-render) · [Development](#development)
+[Deployment & Setup](#deployment--setup-vps-recommended) · [Providers](#choose-a-provider) · [Key Rotation](#round-robin-key-rotation) · [Clients](#connect-claude-code) · [Development](#development)
 
 </div>
 
@@ -34,29 +34,26 @@ Free Claude Code routes Anthropic Messages API traffic from Claude Code to NVIDI
 - **Optional voice-note transcription** through local Whisper or NVIDIA NIM.
 - **Render-ready**: Dockerfile and `render.yaml` included for one-click cloud deploy.
 
-## Quick Start
+## Deployment & Setup (VPS Recommended)
 
-### 1. Install Requirements
+We highly recommend deploying Free Claude Code on an Ubuntu VPS using `systemd` for maximum stability, 24/7 uptime, and seamless background execution. This is the **only recommended method** for a professional, production-ready environment.
 
-Install [Claude Code](https://github.com/anthropics/claude-code), then install `uv` and Python 3.14.
+### 1. Install Dependencies
 
-macOS / Linux:
+On your Ubuntu 22.04+ VPS, install the required packages and `uv`:
 
 ```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install curl git build-essential -y
+
 curl -LsSf https://astral.sh/uv/install.sh | sh
-uv self update
+source $HOME/.bashrc
 uv python install 3.14
 ```
 
-Windows PowerShell:
+### 2. Clone and Configure
 
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-uv self update
-uv python install 3.14
-```
-
-### 2. Clone And Configure
+Clone the repository and set up your environment variables:
 
 ```bash
 git clone https://github.com/technicalboy2023/free-claude-code.git
@@ -64,53 +61,74 @@ cd free-claude-code
 cp .env.example .env
 ```
 
-PowerShell:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Edit `.env` and set at least one provider key. For the default NVIDIA NIM path:
-
-```dotenv
-NVIDIA_NIM_API_KEY="nvapi-your-key"
-MODEL="nvidia_nim/meta/llama-3.1-8b-instruct"
-ANTHROPIC_AUTH_TOKEN="freecc"
-```
-
-Use any local secret for `ANTHROPIC_AUTH_TOKEN`; Claude Code will send the same value back to this proxy. Leave it empty only for local/private testing.
-
-### 3. Start The Proxy
+Edit your `.env` file to set your provider API keys and authentication token:
 
 ```bash
-uv run uvicorn server:app --host 0.0.0.0 --port 8082
+nano .env
 ```
 
-Package install alternative:
+*Ensure you set `ANTHROPIC_AUTH_TOKEN="your_secure_password"` and at least one provider key (e.g., `NVIDIA_NIM_API_KEY`).*
+
+### 3. Setup Systemd Service
+
+To keep the proxy running in the background automatically, create a systemd service:
 
 ```bash
-uv tool install git+https://github.com/technicalboy2023/free-claude-code.git
-fcc-init
-free-claude-code
+sudo nano /etc/systemd/system/claude-proxy.service
 ```
 
-`fcc-init` creates `~/.config/free-claude-code/.env` from the bundled template.
+Paste the following configuration (replace `aman` with your actual Linux username if different):
 
-### 4. Run Claude Code
+```ini
+[Unit]
+Description=Claude Proxy Server
+After=network.target
 
-Point `ANTHROPIC_BASE_URL` at the proxy root. Do **not** append `/v1`.
+[Service]
+User=aman
+WorkingDirectory=/home/aman/free-claude-code
+ExecStart=/home/aman/.local/bin/uv run uvicorn server:app --host 0.0.0.0 --port 8082 --timeout-graceful-shutdown 5
+Restart=always
+RestartSec=5
 
-PowerShell:
-
-```powershell
-$env:ANTHROPIC_AUTH_TOKEN="freecc"; $env:ANTHROPIC_BASE_URL="http://localhost:8082"; claude
+[Install]
+WantedBy=multi-user.target
 ```
 
-Bash:
+Enable and start the service:
 
 ```bash
-ANTHROPIC_AUTH_TOKEN="freecc" ANTHROPIC_BASE_URL="http://localhost:8082" claude
+sudo systemctl daemon-reload
+sudo systemctl enable claude-proxy.service
+sudo systemctl start claude-proxy.service
 ```
+
+### 4. Service Management & Updates
+
+**Check Status & Logs:**
+```bash
+# Check if the service is running
+sudo systemctl status claude-proxy.service
+
+# View live proxy logs
+sudo journalctl -u claude-proxy.service -f
+```
+
+**Stop / Restart Service:**
+```bash
+sudo systemctl stop claude-proxy.service
+sudo systemctl restart claude-proxy.service
+```
+
+**How to Update to the Latest Code:**
+Whenever a new update is released, you can seamlessly update your VPS without breaking the setup:
+```bash
+cd /home/aman/free-claude-code
+git pull
+uv sync --frozen
+sudo systemctl restart claude-proxy.service
+```
+
 
 ## Choose A Provider
 
@@ -237,9 +255,14 @@ OLLAMA_API_KEY="key1,key2"
 
 ### Claude Code CLI
 
+On your local machine (Windows/Mac), configure the Claude Code CLI to route traffic to your new VPS:
+
 ```bash
-ANTHROPIC_AUTH_TOKEN="freecc" ANTHROPIC_BASE_URL="http://localhost:8082" claude
+claude config set customBaseUrl http://<YOUR_VPS_PUBLIC_IP>:8082
+claude config set customApiKey your_secure_password
 ```
+
+Now, simply type `claude` in your local terminal.
 
 ### VS Code Extension
 
@@ -247,8 +270,8 @@ Open Settings, search for `claude-code.environmentVariables`, choose **Edit in s
 
 ```json
 "claudeCode.environmentVariables": [
-  { "name": "ANTHROPIC_BASE_URL", "value": "http://localhost:8082" },
-  { "name": "ANTHROPIC_AUTH_TOKEN", "value": "freecc" }
+  { "name": "ANTHROPIC_BASE_URL", "value": "http://<YOUR_VPS_PUBLIC_IP>:8082" },
+  { "name": "ANTHROPIC_AUTH_TOKEN", "value": "your_secure_password" }
 ]
 ```
 
@@ -265,8 +288,8 @@ Set the environment for `acp.registry.claude-acp`:
 
 ```json
 "env": {
-  "ANTHROPIC_BASE_URL": "http://localhost:8082",
-  "ANTHROPIC_AUTH_TOKEN": "freecc"
+  "ANTHROPIC_BASE_URL": "http://<YOUR_VPS_PUBLIC_IP>:8082",
+  "ANTHROPIC_AUTH_TOKEN": "your_secure_password"
 }
 ```
 
@@ -339,30 +362,6 @@ HF_TOKEN=""
 
 Use `WHISPER_DEVICE="nvidia_nim"` with the `voice` extra and `NVIDIA_NIM_API_KEY` for NVIDIA-hosted transcription.
 
-## Deploy To Render
-
-This project ships with a `Dockerfile` and `render.yaml` blueprint for one-click deployment.
-
-### Steps
-
-1. Push this repo to your GitHub account.
-2. Go to [Render Dashboard](https://dashboard.render.com/) → **New** → **Blueprint**.
-3. Connect your GitHub repo — Render auto-detects `render.yaml`.
-4. Set environment variables in the Render dashboard:
-   - `NVIDIA_NIM_API_KEY` (or whichever provider you use)
-   - `OPENROUTER_API_KEY` (optional)
-   - `DEEPSEEK_API_KEY` (optional)
-   - `OLLAMA_API_KEY` (optional)
-   - `ANTHROPIC_AUTH_TOKEN` (auto-generated if using Blueprint)
-5. Deploy — your proxy will be live at `https://your-service.onrender.com`.
-
-Then point Claude Code at the deployed URL:
-
-```bash
-ANTHROPIC_AUTH_TOKEN="your-token" ANTHROPIC_BASE_URL="https://your-service.onrender.com" claude
-```
-
-> **Note:** The `server.py` entry point reads the `PORT` environment variable that Render injects automatically.
 
 ## Configuration Reference
 
