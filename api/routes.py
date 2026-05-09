@@ -169,7 +169,6 @@ async def create_message(
     request_data: MessagesRequest,
     service: ClaudeProxyService = Depends(get_proxy_service),
     _auth=Depends(require_api_key),
-    beta: bool = False,  # Accept ?beta=true sent by Claude Code client (ignored server-side)
 ):
     """Create a message (always streaming)."""
     try:

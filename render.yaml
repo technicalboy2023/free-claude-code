@@ -13,8 +13,8 @@ services:
       - key: NVIDIA_NIM_API_KEY
         sync: false # Set this securely in the Render dashboard
       # Add other provider API keys you plan to use here and set them in the dashboard:
-      - key: OPENROUTER_API_KEY
-        sync: false # Set this securely in the Render dashboard
+      # - key: OPENROUTER_API_KEY
+      #   sync: false
       # - key: DEEPSEEK_API_KEY
       #   sync: false
       # - key: OLLAMA_API_KEY

@@ -261,15 +261,6 @@ class GlobalRateLimiter:
                 self.set_blocked(delay)
                 await asyncio.sleep(delay)
             except httpx.HTTPStatusError as e:
-                if e.response.status_code == 402:
-                    # 402 Payment Required — provider balance exhausted or key invalid.
-                    # Retrying will not help; surface immediately with a clear log.
-                    logger.error(
-                        "HTTP 402 Payment Required from upstream — "
-                        "check your provider API key balance and validity. "
-                        "No retry will be attempted."
-                    )
-                    raise
                 if e.response.status_code != 429:
                     raise
                 last_exc = e

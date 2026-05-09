@@ -40,11 +40,6 @@ voice_local = [
     "accelerate>=1.13.0",
     "librosa>=0.10.0",
 ]
-messaging = [
-    # Install with: pip install "free-claude-code[messaging]"
-    "python-telegram-bot>=22.7",
-    "discord.py>=2.7.1",
-]
 
 [tool.hatch.build.targets.wheel]
 packages = ["api", "cli", "config", "core", "messaging", "providers"]
@@ -124,4 +119,4 @@ python-version = "3.14"
 [tool.ty.analysis]
 # Optional voice_local extra: torch, transformers, librosa for local whisper transcription
 # Optional voice extra: nvidia-riva-client for nvidia_nim transcription provider
-allowed-unresolved-imports = ["torch", "transformers", "librosa", "riva.client", "telegram", "telegram.ext", "telegram.error", "telegram.request", "discord", "discord.ext"]
+allowed-unresolved-imports = ["torch", "transformers", "librosa", "riva.client"]

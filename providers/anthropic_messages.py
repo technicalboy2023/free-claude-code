@@ -404,15 +404,6 @@ class AnthropicMessagesTransport(BaseProvider):
                 except Exception as stream_error:
                     if not isinstance(stream_error, httpx.HTTPStatusError):
                         self._log_stream_transport_error(tag, req_tag, stream_error)
-                    else:
-                        # Log HTTP errors (e.g. 402 Payment Required, 401, 5xx) clearly
-                        logger.error(
-                            "{}_STREAM: HTTP {} from upstream{} — stream aborted",
-                            tag,
-                            stream_error.response.status_code,
-                            req_tag,
-                        )
-
                     error_message = self._get_error_message(stream_error, request_id)
 
                     logger.info(
