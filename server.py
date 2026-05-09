@@ -20,7 +20,7 @@ if __name__ == "__main__":
     from config.settings import get_settings
 
     settings = get_settings()
-    port = int(os.environ.get("PORT", settings.port))
+    port = settings.port
     log_level = os.environ.get("LOG_LEVEL", "info").lower()
     try:
         # timeout_graceful_shutdown ensures uvicorn doesn't hang on task cleanup.

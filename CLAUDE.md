@@ -133,9 +133,6 @@ Futures orphaned when `enqueue` re-inserts same key between pop and execution.
 **File:** `messaging/trees/queue_manager.py:545-555`  
 `tree._current_task` read after `cancel_current_task()` may point to new task.
 
-### BUG-07 — `render.yaml` default model `z-ai/glm4.7` likely invalid
-**File:** `render.yaml:9`  
-Change to a known NIM catalog model (e.g. `nvidia_nim/meta/llama-3.1-8b-instruct`).
 
 ### BUG-08 — OpenAI client key mutation race under concurrent requests
 **File:** `providers/openai_compat.py`  
@@ -194,19 +191,13 @@ Valid provider IDs: `nvidia_nim`, `open_router`, `deepseek`, `ollama`
 
 ## DEPLOYMENT
 
-**Render (Docker):**
-```bash
-# Render auto-builds from Dockerfile
-# Required env vars: NVIDIA_NIM_API_KEY (or other provider), MODEL
-# ANTHROPIC_AUTH_TOKEN is auto-generated if not set
-```
-
-**Local:**
+**VPS / Linux:**
 ```bash
 uv run uvicorn server:app --host 0.0.0.0 --port 8082 --timeout-graceful-shutdown 5
-# or
-uv run python server.py
 ```
+
+**Systemd Service:**
+For production 24/7 background execution, configure a `systemd` service executing the above `uv run` command.
 
 **Health check:** `GET /health` → `{"status": "healthy"}`
 

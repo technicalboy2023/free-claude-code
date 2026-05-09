@@ -156,19 +156,13 @@ Valid provider IDs: `nvidia_nim`, `open_router`, `deepseek`, `ollama`
 
 ## DEPLOYMENT
 
-**Render (Docker):**
-```bash
-# Render auto-builds from Dockerfile
-# Required env vars: NVIDIA_NIM_API_KEY (or other provider), MODEL
-# ANTHROPIC_AUTH_TOKEN is auto-generated if not set
-```
-
-**Local:**
+**VPS / Linux:**
 ```bash
 uv run uvicorn server:app --host 0.0.0.0 --port 8082 --timeout-graceful-shutdown 5
-# or
-uv run python server.py
 ```
+
+**Systemd Service:**
+For production 24/7 background execution, configure a `systemd` service executing the above `uv run` command.
 
 **Health check:** `GET /health` → `{"status": "healthy"}`
 
