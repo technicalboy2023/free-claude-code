@@ -404,6 +404,15 @@ class AnthropicMessagesTransport(BaseProvider):
                 except Exception as stream_error:
                     if not isinstance(stream_error, httpx.HTTPStatusError):
                         self._log_stream_transport_error(tag, req_tag, stream_error)
+                    else:
+                        # Log HTTP errors (e.g. 402 Payment Required, 401, 5xx) clearly
+                        logger.error(
+                            "{}_STREAM: HTTP {} from upstream{} — stream aborted",
+                            tag,
+                            stream_error.response.status_code,
+                            req_tag,
+                        )
+
                     error_message = self._get_error_message(stream_error, request_id)
 
                     logger.info(
@@ -430,7 +439,12 @@ class AnthropicMessagesTransport(BaseProvider):
                             sent_any_event=False,
                         ):
                             yield event
-                    raise
+                    # NOTE: Do NOT re-raise here. The error has already been
+                    # communicated to the client via SSE error events above.
+                    # Re-raising would propagate through _with_heartbeat and
+                    # cause an unnecessary "Exception in ASGI application" crash
+                    # even though the response completed cleanly from the client's
+                    # perspective.
             finally:
                 if response is not None and not response.is_closed:
                     await response.aclose()

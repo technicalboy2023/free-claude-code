@@ -16,8 +16,6 @@ dependencies = [
     "pydantic>=2.13.3",
     "python-dotenv>=1.2.2",
     "tiktoken>=0.7.0",
-    "python-telegram-bot>=22.7",
-    "discord.py>=2.7.1",
     "pydantic-settings>=2.14.0",
     "openai>=2.34.0",
     "loguru>=0.7.0",
@@ -39,6 +37,11 @@ voice_local = [
     "transformers>=5.7.0",
     "accelerate>=1.13.0",
     "librosa>=0.10.0",
+]
+messaging = [
+    # Install with: pip install "free-claude-code[messaging]"
+    "python-telegram-bot>=22.7",
+    "discord.py>=2.7.1",
 ]
 
 [tool.hatch.build.targets.wheel]
