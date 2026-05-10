@@ -35,9 +35,10 @@ TARGET_ALIASES = {
 SECRET_KEY_PARTS = ("KEY", "TOKEN", "SECRET", "WEBHOOK", "AUTH")
 
 PROVIDER_SMOKE_DEFAULT_MODELS: dict[str, str] = {
-    "nvidia_nim": "nvidia_nim/meta/llama-3.1-8b-instruct",
-    "open_router": "open_router/stepfun/step-3.5-flash:free",
-    "deepseek": "deepseek/deepseek-v4-pro",
+    "nvidia_nim": "nvidia_nim/nvidia/nemotron-3-super-120b-a12b",
+    "open_router": "open_router/z-ai/glm-4.5-air:free",
+    "deepseek": "deepseek/deepseek-chat",
+    "ollama": "ollama/glm-4.7",
 }
 
 
@@ -167,6 +168,8 @@ class SmokeConfig:
             return bool(self.settings.open_router_api_key.strip())
         if provider == "deepseek":
             return bool(self.settings.deepseek_api_key.strip())
+        if provider == "ollama":
+            return bool(self.settings.ollama_api_key.strip())
         return False
 
 

@@ -19,6 +19,7 @@ def _settings(**overrides):
         "nvidia_nim_api_key": "",
         "open_router_api_key": "",
         "deepseek_api_key": "deepseek-key",
+        "ollama_api_key": "ollama",
     }
     values.update(overrides)
     return SimpleNamespace(**values)
