@@ -130,7 +130,7 @@ class Settings(BaseSettings):
     # ==================== Model ====================
     # All Claude model requests are mapped to this single model (fallback)
     # Format: provider_type/model/name
-    model: str = "nvidia_nim/deepseek-ai/deepseek-v4-pro"
+    model: str = "nvidia_nim/deepseek-ai/deepseek-v4-flash"
 
     # Per-model overrides (optional, falls back to MODEL)
     # Each can use a different provider
