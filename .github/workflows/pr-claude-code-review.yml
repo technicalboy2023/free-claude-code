@@ -27,14 +27,14 @@ jobs:
     steps:
       - name: Checkout repository (PR event)
         if: github.event_name == 'pull_request'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Checkout repository (issue_comment event)
         if: github.event_name == 'issue_comment'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
