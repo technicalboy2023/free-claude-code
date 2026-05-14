@@ -34,20 +34,20 @@ Free Claude Code routes Anthropic Messages API traffic from Claude Code to NVIDI
 - **Optional voice-note transcription** through local Whisper or NVIDIA NIM.
 - **Render-ready**: Dockerfile and `render.yaml` included for one-click cloud deploy.
 
-## Deployment & Setup (VPS Recommended)
+## Deployment & Setup (Production Recommended)
 
-We highly recommend deploying Free Claude Code on an Ubuntu VPS using `systemd` for maximum stability, 24/7 uptime, and seamless background execution. This is the **only recommended method** for a professional, production-ready environment.
+We highly recommend deploying Free Claude Code using `systemd` for maximum stability, 24/7 uptime, and seamless background execution. This setup runs completely in user-space (no root required for the proxy).
 
 ### 1. Install Dependencies
 
-On your Ubuntu 22.04+ VPS, install the required packages and `uv`:
+Install `uv` (the lightning-fast Python package manager) and Python 3.14:
 
 ```bash
-sudo apt update && sudo apt upgrade -y
-sudo apt install curl git build-essential -y
-
+# Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
 source $HOME/.bashrc
+
+# Install Python 3.14 via uv
 uv python install 3.14
 ```
 
@@ -69,64 +69,83 @@ nano .env
 
 *Ensure you set `ANTHROPIC_AUTH_TOKEN="your_secure_password"` and at least one provider key (e.g., `NVIDIA_NIM_API_KEY`).*
 
-### 3. Setup Systemd Service
+### 3. Test the Server Manually
 
-To keep the proxy running in the background automatically, create a systemd service:
+Before setting up auto-start, verify that the server runs correctly:
 
 ```bash
-sudo nano /etc/systemd/system/claude-proxy.service
+uv run uvicorn server:app --host 0.0.0.0 --port 8082
+```
+*If it starts without errors, press `CTRL+C` to stop it and proceed to the next step.*
+
+### 4. Setup Auto-Start (Background Mode)
+
+To keep the proxy running permanently in the background and auto-start on PC reboot, create a **user-level systemd service**:
+
+```bash
+mkdir -p ~/.config/systemd/user
+nano ~/.config/systemd/user/free-claude-code.service
 ```
 
-Paste the following configuration (replace `aman` with your actual Linux username if different):
+Paste the following configuration (replace `/home/yourusername` with your actual home directory path):
 
 ```ini
 [Unit]
-Description=Claude Proxy Server
-After=network.target
+Description=Free Claude Code Proxy Server
+After=network-online.target
+Wants=network-online.target
 
 [Service]
-User=aman
-WorkingDirectory=/home/aman/free-claude-code
-ExecStart=/home/aman/.local/bin/uv run uvicorn server:app --host 0.0.0.0 --port 8082 --timeout-graceful-shutdown 5
+Type=simple
+WorkingDirectory=/home/yourusername/Desktop/my project/free-claude-code
+ExecStart=/home/yourusername/.local/bin/uv run uvicorn server:app --host 0.0.0.0 --port 8082
 Restart=always
 RestartSec=5
+Environment=PATH=/home/yourusername/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+# Logging
+StandardOutput=journal
+StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
 ```
 
 Enable and start the service:
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable claude-proxy.service
-sudo systemctl start claude-proxy.service
+systemctl --user daemon-reload
+systemctl --user enable --now free-claude-code.service
+
+# (Optional) Allow the service to run even when you are not logged in:
+loginctl enable-linger $USER
 ```
 
-### 4. Service Management & Updates
+### 5. Service Management & Updates
 
 **Check Status & Logs:**
 ```bash
 # Check if the service is running
-sudo systemctl status claude-proxy.service
+systemctl --user status free-claude-code.service
 
 # View live proxy logs
-sudo journalctl -u claude-proxy.service -f
+journalctl --user -u free-claude-code.service -f
 ```
 
-**Stop / Restart Service:**
+**Stop / Start / Restart Service:**
 ```bash
-sudo systemctl stop claude-proxy.service
-sudo systemctl restart claude-proxy.service
+systemctl --user stop free-claude-code.service
+systemctl --user start free-claude-code.service
+systemctl --user restart free-claude-code.service
 ```
 
 **How to Update to the Latest Code:**
-Whenever a new update is released, you can seamlessly update your VPS without breaking the setup:
+Whenever a new update is released, you can seamlessly update without breaking the setup:
 ```bash
-cd /home/aman/free-claude-code
+cd ~/free-claude-code
 git pull
 uv sync --frozen
-sudo systemctl restart claude-proxy.service
+systemctl --user restart free-claude-code.service
 ```
 
 
