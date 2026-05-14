@@ -118,13 +118,13 @@ def test_model_router_routes_gateway_encoded_provider_model_directly(settings):
         )
     )
 
-    assert routed.request.model == "deepseek-ai/deepseek-v4-pro"
+    assert routed.request.model == "deepseek-ai/deepseek-v4-flash"
     assert (
         routed.resolved.original_model
         == "anthropic/nvidia_nim/deepseek-ai/deepseek-v4-flash"
     )
     assert routed.resolved.provider_id == "nvidia_nim"
-    assert routed.resolved.provider_model == "deepseek-ai/deepseek-v4-pro"
+    assert routed.resolved.provider_model == "deepseek-ai/deepseek-v4-flash"
     assert (
         routed.resolved.provider_model_ref
         == "anthropic/nvidia_nim/deepseek-ai/deepseek-v4-flash"
@@ -142,13 +142,13 @@ def test_model_router_routes_no_thinking_gateway_model_directly(settings):
         )
     )
 
-    assert routed.request.model == "deepseek-ai/deepseek-v4-pro"
+    assert routed.request.model == "deepseek-ai/deepseek-v4-flash"
     assert (
         routed.resolved.original_model
         == "claude-3-freecc-no-thinking/nvidia_nim/deepseek-ai/deepseek-v4-flash"
     )
     assert routed.resolved.provider_id == "nvidia_nim"
-    assert routed.resolved.provider_model == "deepseek-ai/deepseek-v4-pro"
+    assert routed.resolved.provider_model == "deepseek-ai/deepseek-v4-flash"
     assert routed.resolved.thinking_enabled is False
 
 
