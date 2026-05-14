@@ -148,6 +148,31 @@ uv sync --frozen
 systemctl --user restart free-claude-code.service
 ```
 
+### 6. Advanced: 100% Zero-Touch Automation
+
+To make your server fully autonomous, we have provided two scripts to automate daily updates and log cleanup.
+
+#### A. Daily Auto-Deploy (Auto-Pull)
+The `auto_update.sh` script checks GitHub for updates, pulls new code, syncs dependencies, and restarts the proxy automatically.
+
+Make it executable and add it to your crontab to run daily (e.g., at 3:00 PM):
+```bash
+chmod +x auto_update.sh
+(crontab -l 2>/dev/null; echo "0 15 * * * $PWD/auto_update.sh") | crontab -
+```
+
+#### B. Log Cleanup (Logrotate)
+To prevent your `server.log` from growing indefinitely, use the provided `logrotate.conf.example`.
+
+1. Edit `logrotate.conf.example` and update the paths and username to match your setup.
+2. Copy it to the system logrotate directory:
+```bash
+sudo cp logrotate.conf.example /etc/logrotate.d/free-claude-code
+sudo chown root:root /etc/logrotate.d/free-claude-code
+sudo chmod 644 /etc/logrotate.d/free-claude-code
+```
+This will compress old logs weekly and keep only the last 4 weeks.
+
 
 ## Choose A Provider
 

@@ -1,0 +1,16 @@
+# Example Logrotate Configuration for Free Claude Code
+# To use this, change the path to your actual server.log path,
+# then copy this file to /etc/logrotate.d/free-claude-code
+# Example: sudo cp logrotate.conf.example /etc/logrotate.d/free-claude-code
+
+"/path/to/your/free-claude-code/server.log" {
+    weekly
+    rotate 4
+    compress
+    delaycompress
+    missingok
+    notifempty
+    # Change 'yourusername' to your actual linux user
+    create 0644 yourusername yourusername
+    copytruncate
+}
