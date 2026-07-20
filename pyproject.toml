@@ -19,7 +19,7 @@ dependencies = [
     "python-telegram-bot>=22.8",
     "discord.py>=2.7.1",
     "pydantic-settings>=2.14.2",
-    "openai>=2.45.0",
+    "openai>=2.46.0",
     "loguru>=0.7.0",
     "aiohttp>=3.14.1",
 ]
@@ -36,7 +36,7 @@ voice = [
 ]
 voice_local = [
     "torch>=2.13.0",
-    "transformers>=5.13.1",
+    "transformers>=5.14.1",
     "accelerate>=1.14.0",
     "librosa>=0.10.0",
 ]
@@ -60,8 +60,8 @@ dev = [
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
-    "ty>=0.0.59",
-    "ruff>=0.15.21",
+    "ty>=0.0.61",
+    "ruff>=0.15.22",
     "pytest-xdist>=3.8.0",
 ]
 
